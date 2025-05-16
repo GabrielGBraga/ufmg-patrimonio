@@ -2,9 +2,18 @@
   "expo": {
     "scheme": "acme",
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow this app to access your camera",
+          "microphonePermission": "Allow this app to access your microphone",
+          "recordAudioAndroid": true
+        }
+      ]
     ],
-    "name": "my-app",
-    "slug": "my-app"
+    "name": "Patrimonio UFMG",
+    "slug": "patrimonio-ufmg",
+    "version": "1.0.0"
   }
 }
