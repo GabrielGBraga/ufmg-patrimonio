@@ -1,6 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import {Alert} from "react-native";
-import {getDownloadURL, ref, StorageReference, uploadBytes} from "firebase/storage";
+import {getDownloadURL, ref, StorageReference, uploadBytes, deleteObject} from "firebase/storage";
 import {storage} from "@/FirebaseConfig";
 
 type imageData = {
@@ -104,5 +104,44 @@ export const uploadImage = async (userId: string, image: string): Promise<string
         console.error('Error uploading image: ', error);
         Alert.alert('Upload failed!', error.message);
         return undefined;
+    }
+};
+
+/**
+ * Deleta uma imagem do armazenamento Firebase com base na URL salva.
+ *
+ * Esta função extrai o caminho do arquivo da URL fornecida, cria uma referência
+ * ao arquivo no armazenamento Firebase e o exclui.
+ *
+ * Tratamento de erros:
+ * - Qualquer erro durante a exclusão é capturado e exibido no console e em um alerta para o usuário.
+ *
+ * Nota: Certifique-se de que o Firebase Storage esteja configurado corretamente no projeto.
+ */
+export const deleteImage = async (imageUrl: string): Promise<boolean> => {
+    try {
+        console.log("Tentando deletar a imagem.");
+
+        // Base URL do Firebase Storage
+        const baseUrl = "https://firebasestorage.googleapis.com/v0/b/";
+        if (!imageUrl.startsWith(baseUrl)) {
+            throw new Error("URL inválida do Firebase Storage.");
+        }
+
+        // Extrai o caminho do arquivo da URL
+        const pathWithParams = imageUrl.replace(baseUrl, "").split("/o/")[1];
+        const filePath = decodeURIComponent(pathWithParams.split("?")[0]);
+
+        // Cria uma referência ao arquivo no armazenamento
+        const fileRef = ref(storage, filePath);
+
+        // Deleta o arquivo
+        await deleteObject(fileRef);
+        console.log("Imagem deletada com sucesso!");
+        return true;
+    } catch (error: any) {
+        console.error("Erro ao deletar a imagem: ", error);
+        Alert.alert("Erro ao deletar a imagem!", error.message);
+        return false;
     }
 };

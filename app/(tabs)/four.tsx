@@ -235,7 +235,7 @@ export default function manegePat() {
             <ThemedView style={styles.container}>
 
                 {/* Header da página */}
-                <ThemedHeader title={title}/>
+                <ThemedHeader title={title} arrowBack={() => {router.back}}/>
 
                 {/* Botão para selecionar imagem */}
                 {!image ? (

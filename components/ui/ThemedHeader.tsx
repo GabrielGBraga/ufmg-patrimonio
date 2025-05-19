@@ -1,20 +1,20 @@
 import { View, type TextProps, TouchableOpacity } from 'react-native';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
 import { ThemedText } from './ThemedText';
-
 
 export type ThemedHeaderProps = TextProps & {
   lightColor?: string;
   darkColor?: string;
-  title?: string;
+  title: string;
+  arrowBack: () => void; // Accepts a function or a direct value
 };
 
 export function ThemedHeader({ 
   style, 
   lightColor, 
   darkColor, 
+  arrowBack, 
   title = "My Title", 
   ...otherProps 
 }: ThemedHeaderProps) {
@@ -24,7 +24,7 @@ export function ThemedHeader({
   return (
     <View style={{ flexDirection: "row", alignItems: "center", padding: 50, backgroundColor }}>
       {/* Go Back Icon */}
-      <TouchableOpacity onPress={() => router.back()} style={{ zIndex: 1 }}>
+      <TouchableOpacity onPress={arrowBack} style={{ zIndex: 1 }}>
         <Ionicons name="arrow-back" size={24} color={textColor} />
       </TouchableOpacity>
 

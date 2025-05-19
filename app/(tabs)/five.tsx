@@ -162,7 +162,10 @@ export default function listing() {
 
   return scanBool ? (
     <SafeAreaView style={styles.safeArea}>
-      {/* Camera View */}
+      
+      {/* Header da página */}
+      <ThemedHeader title="Escanear Patrimonio" arrowBack={() => {setScanBool(false)}}/>
+      
       <CameraScreen
         onBarcodeScanned={({ type, data }) => {
           console.log(`Scanned: ${type} - ${data}`);
@@ -173,7 +176,7 @@ export default function listing() {
     <SafeAreaView style={styles.safeArea}>
       <ThemedView style={styles.safeArea}>
         {/* Header da página */}
-        <ThemedHeader title="Pesquisar Patrimonio" />
+        <ThemedHeader title="Pesquisar Patrimonio" arrowBack={() => {router.back()}}/>
 
         {/* Input do número de patrimonio */}
         <ThemedView style={styles.row}>
@@ -299,13 +302,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   scanningFrame: {
-    width: 250,
-    height: 250,
-    borderWidth: 2,
-    borderColor: "white",
-    borderRadius: 10,
     justifyContent: "center",
+    flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.3)", // Slightly darkened background
   },
 });
