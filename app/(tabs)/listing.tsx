@@ -111,7 +111,7 @@ export default function listing() {
   const editPat = () => {
     console.log("OG Image URL: ", patrimonioList[0].image.url);
     router.push({
-      pathname: "/four",
+      pathname: "/managePat",
       params: {
         mode: "edit",
         patrimonioParam: JSON.stringify(patrimonioList[0]),
@@ -187,14 +187,14 @@ export default function listing() {
             style={styles.input}
           />
 
-          <ThemedButton style={styles.searchButton} onPress={fetchPatrimonio}>
+          <ThemedButton  onPress={fetchPatrimonio}>
             <ThemedText type="defaultSemiBold">Pesquisar</ThemedText>
           </ThemedButton>
         </ThemedView>
 
         {/* Botão de escanear */}
         <ThemedButton
-          style={styles.scanButton}
+          
           onPress={() => {
             setScanBool(true);
           }}
@@ -230,12 +230,13 @@ const styles = StyleSheet.create({
   // Estilo do campo de entrada
   input: {
     flex: 1,
-    height: 48,
+    height: 50,
     borderWidth: 1,
     paddingHorizontal: 12,
   },
   // Estilo do botão de pesquisa
   searchButton: {
+    marginRight: 20,
     marginLeft: 10,
     padding: 12,
     borderRadius: 8,

@@ -1,4 +1,4 @@
-import { TouchableOpacity, type TouchableOpacityProps } from 'react-native';
+import { TouchableOpacity, type TouchableOpacityProps, StyleSheet } from 'react-native';
 import { useThemeColor } from '@/hooks/useThemeColor';
 
 // Essas são as propriedades do objeto que podem ser editadas.
@@ -15,20 +15,20 @@ export function ThemedButton({ style, lightColor, darkColor, textColor, ...other
     const color = useThemeColor({ light: textColor, dark: textColor }, 'buttonText');
 
     return (
-        <TouchableOpacity style={[{ backgroundColor }, style]} {...otherProps}>
+        <TouchableOpacity style={[{ backgroundColor }, style, styles.button]} {...otherProps}>
         </TouchableOpacity>
     );
 }
 
-const styles = {
+const styles = StyleSheet.create({
     button: {
-        margin: 15,
+        marginHorizontal: 15,
         padding: 12,
         borderRadius: 8,
         alignItems: 'center',
         justifyContent: 'center',
     }
-};
+});
 // O estilo do botão pode ser personalizado através do objeto styles
 // e passado como propriedade 'style' ao componente ThemedButton.
 // O componente ThemedButton pode ser usado em qualquer lugar do aplicativo

@@ -27,7 +27,7 @@ export default function TabOneScreen() {
 
     const addPage = async () => {
         router.push({
-            pathname: '/four',
+            pathname: '/managePat',
             params: { mode: "add" }
         });
     };
@@ -40,7 +40,7 @@ export default function TabOneScreen() {
                 return;
             }
         }
-        router.push("/five");
+        router.push("/listing");
     };
 
     return (

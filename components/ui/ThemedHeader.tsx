@@ -22,7 +22,7 @@ export function ThemedHeader({
   const textColor = useThemeColor({}, 'text');
 
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", padding: 50, backgroundColor }}>
+    <View style={{ flexDirection: "row", alignItems: "flex-start", padding: 50, backgroundColor }}>
       {/* Go Back Icon */}
       <TouchableOpacity onPress={arrowBack} style={{ zIndex: 1 }}>
         <Ionicons name="arrow-back" size={24} color={textColor} />

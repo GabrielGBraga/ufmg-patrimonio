@@ -8,8 +8,8 @@ export default function Layout() {
       }}>
       {/* Optionally configure static options outside the route.*/}
       <Stack.Screen name="index" options={{}} />
-      <Stack.Screen name="four" options={{}} />
-      <Stack.Screen name="five" options={{}} />
+      <Stack.Screen name="managePai" options={{}} />
+      <Stack.Screen name="listing" options={{}} />
     </Stack>
   );
 }
