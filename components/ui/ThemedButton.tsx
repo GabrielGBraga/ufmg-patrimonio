@@ -19,3 +19,17 @@ export function ThemedButton({ style, lightColor, darkColor, textColor, ...other
         </TouchableOpacity>
     );
 }
+
+const styles = {
+    button: {
+        margin: 15,
+        padding: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+    }
+};
+// O estilo do botão pode ser personalizado através do objeto styles
+// e passado como propriedade 'style' ao componente ThemedButton.
+// O componente ThemedButton pode ser usado em qualquer lugar do aplicativo
+// onde um botão com tema é necessário, garantindo consistência visual.
