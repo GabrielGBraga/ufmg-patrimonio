@@ -97,15 +97,29 @@ export const uploadImage = async (userId: string, image: string): Promise<string
         console.log("Ref: ", !!storageRef);
         await uploadBytes(storageRef, blob);
         console.log("Upload feito!")
+        console.log("Ref: ", storageRef);
         const imageUrl = await getDownloadURL(storageRef);
         console.log("URL: ", imageUrl);
-        return imageUrl;
+        return JSON.stringify(storageRef);
     } catch (error: any) {
         console.error('Error uploading image: ', error);
         Alert.alert('Upload failed!', error.message);
         return undefined;
     }
 };
+
+export const getImageUrl = async (imageRef: StorageReference): Promise<string> => {
+    try {
+        console.log("Tentando obter a URL da imagem.");
+        const imageUrl = await getDownloadURL(imageRef);
+        console.log("URL da imagem obtida com sucesso: ", imageUrl);
+        return imageUrl;
+    } catch (error: any) {
+        console.error("Erro ao obter a URL da imagem: ", error);
+        Alert.alert("Erro ao obter a URL da imagem!", error.message);
+        throw error; // Re-throw the error to handle it in the calling function
+    }
+}
 
 /**
  * Deleta uma imagem do armazenamento Firebase com base na URL salva.
@@ -118,25 +132,11 @@ export const uploadImage = async (userId: string, image: string): Promise<string
  *
  * Nota: Certifique-se de que o Firebase Storage esteja configurado corretamente no projeto.
  */
-export const deleteImage = async (imageUrl: string): Promise<boolean> => {
+export const deleteImage = async (imageRef: StorageReference): Promise<boolean> => {
     try {
         console.log("Tentando deletar a imagem.");
-
-        // Base URL do Firebase Storage
-        const baseUrl = "https://firebasestorage.googleapis.com/v0/b/";
-        if (!imageUrl.startsWith(baseUrl)) {
-            throw new Error("URL inválida do Firebase Storage.");
-        }
-
-        // Extrai o caminho do arquivo da URL
-        const pathWithParams = imageUrl.replace(baseUrl, "").split("/o/")[1];
-        const filePath = decodeURIComponent(pathWithParams.split("?")[0]);
-
-        // Cria uma referência ao arquivo no armazenamento
-        const fileRef = ref(storage, filePath);
-
         // Deleta o arquivo
-        await deleteObject(fileRef);
+        await deleteObject(imageRef);
         console.log("Imagem deletada com sucesso!");
         return true;
     } catch (error: any) {

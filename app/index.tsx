@@ -9,8 +9,8 @@ import { ThemedTextInput } from "@/components/ui/ThemedTextInput";
 import { ThemedView } from '@/components/ui/ThemedView';
 
 export default function Index() {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const [email, setEmail] = useState('ggb-13@ufmg.br');
+    const [password, setPassword] = useState('Gd&lk73a');
     const [showPassword, setShowPassword] = useState(false);
 
     const signIn = async () => {

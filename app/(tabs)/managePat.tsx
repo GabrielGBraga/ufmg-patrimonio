@@ -2,6 +2,7 @@ import {ActivityIndicator, Alert, Image, StyleSheet} from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { db } from '@/FirebaseConfig';
 import { addDoc, collection, deleteDoc, doc, updateDoc, waitForPendingWrites } from 'firebase/firestore';
+import { StorageReference } from 'firebase/storage';
 import { getAuth } from 'firebase/auth';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { ThemedView } from "@/components/ui/ThemedView";
@@ -9,7 +10,7 @@ import { ThemedButton } from "@/components/ui/ThemedButton";
 import { ScrollableAreaView } from "@/components/layout/ScrollableAreaView";
 import { TextInputGroup } from "@/components/TextInputGroup";
 import { CheckboxGroup } from "@/components/CheckboxGroup";
-import { getImage, uploadImage } from "@/hooks/ImageHandler";
+import { getImage, uploadImage, deleteImage, getImageUrl } from "@/hooks/ImageHandler";
 import { patrimonio, Patrimonio } from "@/constants/Patrimonio";
 import { ThemedHeader } from '@/components/ui/ThemedHeader';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -20,7 +21,6 @@ import { getDownloadURL } from "firebase/storage";
 interface LocalSearchParams {
     mode?: string;
     patrimonioParam?: string;
-    imageUrl?: string;
     patrimonioId?: string;
 }
 
@@ -49,8 +49,22 @@ export default function manegePat() {
 
     const [formData, setFormData] = useState(patrimonioData);
 
+    setFormData((prevState) => ({
+        ...prevState,
+        image: {
+            ...prevState.image,
+            ref: mode === "edit" ? JSON.parse(prevState.image.ref as string) as StorageReference : '', // Ensure ref is initialized
+        },
+    }));
+
+    const hasEditImage = mode === "edit" && formData.image.ref != null && typeof formData.image.ref === 'object' && 'bucket' in formData.image.ref
+
     // Estados iniciais para imagem, botão "Adicionar" pressionado e alternância de ATM.
-    const [image, setImage] = useState<any>(mode === "edit" ? formData.image.url : null);
+    const [image, setImage] = useState<any>(
+        hasEditImage
+            ? getImageUrl(formData.image.ref as StorageReference)
+            : null
+    );
     const [isAddingPatrimonio, setIsAddingPatrimonio] = useState(false);
     const [boolAtm, setBollAtm] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -63,7 +77,7 @@ export default function manegePat() {
             addPatrimonio();
             setIsAddingPatrimonio(false);
         }
-    }, [formData.image?.url]);
+    }, [isAddingPatrimonio]);
 
     /**
      * Manipula a alteração nos checkboxes, alternando o estado selecionado.
@@ -117,10 +131,6 @@ export default function manegePat() {
      */
     const resetImage = async () => {
         setImage(null);
-        setFormData((prevState) => ({
-            ...prevState,
-            image: patrimonio.image
-        }));
     };
 
     // Configurações dinâmicas de entrada para o TextInputGroup.
@@ -202,9 +212,17 @@ export default function manegePat() {
 
             setLoading(true);
 
-            setIsAddingPatrimonio(true);
-
             try {
+                if (mode === "edit" && formData.image.ref) {
+                    try {
+                        await deleteImage(formData.image.ref as StorageReference);
+                    } catch (error) {
+                        console.error('Erro ao deletar a imagem:', error);
+                        Alert.alert('Erro', 'Ocorreu um erro durante a exclusão da imagem. Por favor, tente novamente.');
+                        return
+                    }
+                }
+
                 const imageUrl = await uploadImage(user.uid, image);
                 if (imageUrl) {
                     setFormData((prevState) => ({
@@ -220,13 +238,14 @@ export default function manegePat() {
                     console.log('Erro ao fazer upload da imagem');
                     Alert.alert('Erro', 'Não foi possível fazer o upload da imagem.');
                 }
+                setIsAddingPatrimonio(true);
             } catch (error) {
                 console.error('Erro no upload da imagem:', error);
                 Alert.alert('Erro', 'Ocorreu um erro durante o upload da imagem. Por favor, tente novamente.');
             }
         }else{
             Alert.alert('Erro', 'Usuário ou imagem não encontrados!');
-                return;
+            return;
         }
     };
 

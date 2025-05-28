@@ -27,6 +27,7 @@ import { ThemedHeader } from "@/components/ui/ThemedHeader";
 import { router } from "expo-router";
 import { useIsFocused } from "@react-navigation/native";
 import { CameraScreen } from "@/components/ui/CameraScreen";
+import { getImageUrl } from "@/hooks/ImageHandler";
 
 /**
  * Este componente renderiza uma tela para pesquisar e exibir patrimônios pelo número.
@@ -36,7 +37,7 @@ export default function listing() {
   // Estado para armazenar o número do patrimônio a ser pesquisado
   const [patNum, setPatNum] = useState("");
   // Estado para armazenar a lista de patrimônios buscados
-  const [patrimonioList, setPatrimonioList] = useState<Patrimonio[]>([]);
+  const [patrimonioList, setPatrimonioList] = useState<Patrimonio>(patrimonio);
   // Váriavel boleana que define se o scan está ativado ou não
   const [scanBool, setScanBool] = useState(false);
   // ID do documento pesquisado
@@ -54,10 +55,10 @@ export default function listing() {
 
   useEffect(() => {
     if (isFocused && editado) {
-      setPatrimonioList([]);
+      setPatrimonioList(patrimonio);
     }
     if(!scanBool){
-      setPatrimonioList([]);
+      setPatrimonioList(patrimonio);
     }
   }, [isFocused]);
 
@@ -67,6 +68,12 @@ export default function listing() {
       setHasPermission(status === "granted");
     })();
   }, []);
+
+  useEffect(() => {
+    if(patrimonioList.image.ref){
+      setImage(getImageUrl(patrimonioList.image.ref));
+    }
+  }, [patrimonioList]);
 
   if (hasPermission === null) {
     return <ThemedText>Requesting camera permissions...</ThemedText>;
@@ -92,11 +99,8 @@ export default function listing() {
         data.forEach((doc) => {
           setDocId(doc.id);
         });
-        setPatrimonioList(
-          data.docs.map((doc) => ({
-            ...(doc.data() as Patrimonio), // Cast to your expected type
-          }))
-        );
+        let patrimonioData = data.docs[0].data() as Patrimonio;
+        setPatrimonioList(patrimonioData);
         setPatNum("");
       } catch (error) {
         console.error("Erro ao buscar patrimônios: ", error);
@@ -109,13 +113,11 @@ export default function listing() {
   };
 
   const editPat = () => {
-    console.log("OG Image URL: ", patrimonioList[0].image.url);
     router.push({
       pathname: "/managePat",
       params: {
         mode: "edit",
-        patrimonioParam: JSON.stringify(patrimonioList[0]),
-        imageUrl: encodeURIComponent(patrimonioList[0].image.url),
+        patrimonioParam: JSON.stringify(patrimonioList),
         patrimonioId: JSON.stringify(docId),
       },
     });
@@ -204,7 +206,7 @@ export default function listing() {
 
         {/* Listagem do patrimonio */}
         <FlatList
-          data={patrimonioList}
+          data={[patrimonioList]}
           renderItem={renderItem}
           keyExtractor={(item) => docId}
           contentContainerStyle={styles.listContainer}
