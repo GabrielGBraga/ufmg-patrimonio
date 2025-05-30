@@ -196,7 +196,6 @@ export default function listing() {
 
         {/* Botão de escanear */}
         <ThemedButton
-          
           onPress={() => {
             setScanBool(true);
           }}
@@ -205,12 +204,14 @@ export default function listing() {
         </ThemedButton>
 
         {/* Listagem do patrimonio */}
-        <FlatList
-          data={[patrimonioList]}
-          renderItem={renderItem}
-          keyExtractor={(item) => docId}
-          contentContainerStyle={styles.listContainer}
-        />
+        {scanBool && (
+          <FlatList
+            data={[patrimonioList]}
+            renderItem={renderItem}
+            keyExtractor={(item) => docId}
+            contentContainerStyle={styles.listContainer}
+          />
+        )}
       </ThemedView>
     </SafeAreaView>
   );
