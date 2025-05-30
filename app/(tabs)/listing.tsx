@@ -45,9 +45,10 @@ export default function listing() {
   //Verifica se um patrimonio foi editado
   const [editado, setEditado] = useState(false);
   //Imagem do patrimonio
-  const [image, setImage] = useState<any>();
+  const [pageImage, setImage] = useState<any>();
   const isFocused = useIsFocused();
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [searchBool, setSearchBool] = useState(false);
 
   const auth = getAuth();
   const user = auth.currentUser;
@@ -102,6 +103,7 @@ export default function listing() {
         let patrimonioData = data.docs[0].data() as Patrimonio;
         setPatrimonioList(patrimonioData);
         setPatNum("");
+        setSearchBool(true);
       } catch (error) {
         console.error("Erro ao buscar patrimônios: ", error);
       }
@@ -134,7 +136,7 @@ export default function listing() {
       <ThemedView style={styles.patrimonioContainer}>
         <View style={styles.row}>
           <Image
-            source={{ uri: item.image.url }}
+            source={{ uri: pageImage }}
             style={{ height: item.image.height, width: item.image.width }}
           />
         </View>
@@ -204,9 +206,9 @@ export default function listing() {
         </ThemedButton>
 
         {/* Listagem do patrimonio */}
-        {scanBool && (
+        {searchBool && (
           <FlatList
-            data={[patrimonioList]}
+            data={[patrimonioList, pageImage]}
             renderItem={renderItem}
             keyExtractor={(item) => docId}
             contentContainerStyle={styles.listContainer}

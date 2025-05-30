@@ -49,13 +49,17 @@ export default function manegePat() {
 
     const [formData, setFormData] = useState(patrimonioData);
 
-    setFormData((prevState) => ({
-        ...prevState,
-        image: {
-            ...prevState.image,
-            ref: mode === "edit" ? JSON.parse(prevState.image.ref as string) as StorageReference : '', // Ensure ref is initialized
-        },
-    }));
+    useEffect(() => {
+        if (mode === "edit" && formData.image.ref) {
+            setFormData((prevState) => ({
+                ...prevState,
+                image: {
+                    ...prevState.image,
+                    ref: JSON.parse(prevState.image.ref as string) as StorageReference,
+                },
+            }));
+        }
+    }, [mode, formData.image.ref]);
 
     const hasEditImage = mode === "edit" && formData.image.ref != null && typeof formData.image.ref === 'object' && 'bucket' in formData.image.ref
 
