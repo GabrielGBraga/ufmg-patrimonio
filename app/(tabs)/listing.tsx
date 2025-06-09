@@ -27,7 +27,6 @@ import { ThemedHeader } from "@/components/ui/ThemedHeader";
 import { router } from "expo-router";
 import { useIsFocused } from "@react-navigation/native";
 import { CameraScreen } from "@/components/ui/CameraScreen";
-import { getImageUrl } from "@/hooks/ImageHandler";
 
 /**
  * Este componente renderiza uma tela para pesquisar e exibir patrimônios pelo número.
@@ -37,7 +36,7 @@ export default function listing() {
   // Estado para armazenar o número do patrimônio a ser pesquisado
   const [patNum, setPatNum] = useState("");
   // Estado para armazenar a lista de patrimônios buscados
-  const [patrimonioList, setPatrimonioList] = useState<Patrimonio>(patrimonio);
+  const [patrimonioList, setPatrimonioList] = useState<Patrimonio[]>([]);
   // Váriavel boleana que define se o scan está ativado ou não
   const [scanBool, setScanBool] = useState(false);
   // ID do documento pesquisado
@@ -45,10 +44,9 @@ export default function listing() {
   //Verifica se um patrimonio foi editado
   const [editado, setEditado] = useState(false);
   //Imagem do patrimonio
-  const [pageImage, setImage] = useState<any>();
+  const [image, setImage] = useState<any>();
   const isFocused = useIsFocused();
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
-  const [searchBool, setSearchBool] = useState(false);
 
   const auth = getAuth();
   const user = auth.currentUser;
@@ -56,10 +54,10 @@ export default function listing() {
 
   useEffect(() => {
     if (isFocused && editado) {
-      setPatrimonioList(patrimonio);
+      setPatrimonioList([]);
     }
     if(!scanBool){
-      setPatrimonioList(patrimonio);
+      setPatrimonioList([]);
     }
   }, [isFocused]);
 
@@ -69,12 +67,6 @@ export default function listing() {
       setHasPermission(status === "granted");
     })();
   }, []);
-
-  useEffect(() => {
-    if(patrimonioList.image.ref){
-      setImage(getImageUrl(patrimonioList.image.ref));
-    }
-  }, [patrimonioList]);
 
   if (hasPermission === null) {
     return <ThemedText>Requesting camera permissions...</ThemedText>;
@@ -100,10 +92,12 @@ export default function listing() {
         data.forEach((doc) => {
           setDocId(doc.id);
         });
-        let patrimonioData = data.docs[0].data() as Patrimonio;
-        setPatrimonioList(patrimonioData);
+        setPatrimonioList(
+          data.docs.map((doc) => ({
+            ...(doc.data() as Patrimonio), // Cast to your expected type
+          }))
+        );
         setPatNum("");
-        setSearchBool(true);
       } catch (error) {
         console.error("Erro ao buscar patrimônios: ", error);
       }
@@ -115,11 +109,13 @@ export default function listing() {
   };
 
   const editPat = () => {
+    console.log("OG Image URL: ", patrimonioList[0].image.url);
     router.push({
       pathname: "/managePat",
       params: {
         mode: "edit",
-        patrimonioParam: JSON.stringify(patrimonioList),
+        patrimonioParam: JSON.stringify(patrimonioList[0]),
+        imageUrl: encodeURIComponent(patrimonioList[0].image.url),
         patrimonioId: JSON.stringify(docId),
       },
     });
@@ -136,7 +132,7 @@ export default function listing() {
       <ThemedView style={styles.patrimonioContainer}>
         <View style={styles.row}>
           <Image
-            source={{ uri: pageImage }}
+            source={{ uri: item.image.url }}
             style={{ height: item.image.height, width: item.image.width }}
           />
         </View>
@@ -198,6 +194,7 @@ export default function listing() {
 
         {/* Botão de escanear */}
         <ThemedButton
+          
           onPress={() => {
             setScanBool(true);
           }}
@@ -206,14 +203,12 @@ export default function listing() {
         </ThemedButton>
 
         {/* Listagem do patrimonio */}
-        {searchBool && (
-          <FlatList
-            data={[patrimonioList, pageImage]}
-            renderItem={renderItem}
-            keyExtractor={(item) => docId}
-            contentContainerStyle={styles.listContainer}
-          />
-        )}
+        <FlatList
+          data={patrimonioList}
+          renderItem={renderItem}
+          keyExtractor={(item) => docId}
+          contentContainerStyle={styles.listContainer}
+        />
       </ThemedView>
     </SafeAreaView>
   );

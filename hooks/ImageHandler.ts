@@ -90,36 +90,19 @@ export const uploadImage = async (userId: string, image: string): Promise<string
     try {
         console.log("Tentando fazer upload da imagem.")
         const response = await fetch(image);
-        console.log("Fetch: ", !!response);
         const blob = await response.blob();
-        console.log("Blob: ", !!blob);
         const storageRef = ref(storage, `images/${userId}/${Date.now()}`);
         console.log("Ref: ", !!storageRef);
         await uploadBytes(storageRef, blob);
-        console.log("Upload feito!")
-        console.log("Ref: ", storageRef);
         const imageUrl = await getDownloadURL(storageRef);
         console.log("URL: ", imageUrl);
-        return JSON.stringify(storageRef);
+        return imageUrl;
     } catch (error: any) {
         console.error('Error uploading image: ', error);
         Alert.alert('Upload failed!', error.message);
         return undefined;
     }
 };
-
-export const getImageUrl = async (imageRef: StorageReference): Promise<string> => {
-    try {
-        console.log("Tentando obter a URL da imagem.");
-        const imageUrl = await getDownloadURL(imageRef);
-        console.log("URL da imagem obtida com sucesso: ", imageUrl);
-        return imageUrl;
-    } catch (error: any) {
-        console.error("Erro ao obter a URL da imagem: ", error);
-        Alert.alert("Erro ao obter a URL da imagem!", error.message);
-        throw error; // Re-throw the error to handle it in the calling function
-    }
-}
 
 /**
  * Deleta uma imagem do armazenamento Firebase com base na URL salva.
@@ -132,11 +115,15 @@ export const getImageUrl = async (imageRef: StorageReference): Promise<string> =
  *
  * Nota: Certifique-se de que o Firebase Storage esteja configurado corretamente no projeto.
  */
-export const deleteImage = async (imageRef: StorageReference): Promise<boolean> => {
+export const deleteImage = async (imageUrl: string): Promise<boolean> => {
     try {
         console.log("Tentando deletar a imagem.");
+
+        // Cria uma referência ao arquivo no armazenamento
+        const fileRef = ref(storage, imageUrl);
+
         // Deleta o arquivo
-        await deleteObject(imageRef);
+        await deleteObject(fileRef);
         console.log("Imagem deletada com sucesso!");
         return true;
     } catch (error: any) {

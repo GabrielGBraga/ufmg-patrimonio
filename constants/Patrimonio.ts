@@ -1,11 +1,10 @@
-import { StorageReference } from 'firebase/storage';
 
 /**
  * Essas são as características de um patrimônio utilizadas no aplicativo.
  */
 export const patrimonio = {
     image: {
-        ref: '' as StorageReference | '',
+        url: '', // O valor inicial deve ser null, pois `StorageReference` não pode ser instanciado diretamente
         height: 0,
         width: 0,
     },

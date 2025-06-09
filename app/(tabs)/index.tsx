@@ -32,6 +32,13 @@ export default function TabOneScreen() {
         });
     };
 
+    const image = async () => {
+        router.push({
+            pathname: '/imageTesting',
+            params: { mode: "add" }
+        });
+    };
+
     const searchPage = async () => {
         if (!cameraPermission?.granted) {
             const permission = await requestPermission();
@@ -60,6 +67,10 @@ export default function TabOneScreen() {
             {/* Botão para pesquisar um patrimonio */}
             <ThemedButton style={styles.button} onPress={searchPage}>
                 <ThemedText style={styles.text}>Pesquisar</ThemedText>
+            </ThemedButton>
+
+            <ThemedButton style={styles.button} onPress={image}>
+                <ThemedText style={styles.text}>Imagem</ThemedText>
             </ThemedButton>
         </ThemedView>
     );
