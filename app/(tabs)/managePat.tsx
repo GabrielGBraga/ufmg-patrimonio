@@ -189,7 +189,6 @@ export default function manegePat() {
         }
     };
 
-    console.log(formData.image);
     /**
      * Faz o upload da imagem selecionada e salva a URL no formulário.
      */
@@ -217,7 +216,6 @@ export default function manegePat() {
                         },
                         email: email ?? ""
                     }));
-                    console.log("A")
                 } else {
                     console.log('Erro ao fazer upload da imagem');
                     Alert.alert('Erro', 'Não foi possível fazer o upload da imagem.');
@@ -233,6 +231,7 @@ export default function manegePat() {
     };
 
     const resolveAdd = async () => {
+
         if (mode === "edit" && !imageCancel){
             setIsAddingPatrimonio(true);
         }else{
@@ -285,7 +284,7 @@ export default function manegePat() {
                 )}
 
                 {/* Botão para adicionar patrimônio */}
-                <ThemedButton style={styles.button} onPress={handleUploadImage}>
+                <ThemedButton style={styles.button} onPress={resolveAdd}>
                     <ThemedText style={styles.buttonText}>{finalButtonText}</ThemedText>
                 </ThemedButton>
 
