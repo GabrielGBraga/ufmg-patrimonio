@@ -9,7 +9,7 @@ import { ThemedButton } from "@/components/ui/ThemedButton";
 import { ScrollableAreaView } from "@/components/layout/ScrollableAreaView";
 import { TextInputGroup } from "@/components/TextInputGroup";
 import { CheckboxGroup } from "@/components/CheckboxGroup";
-import { getImage, uploadImage } from "@/hooks/ImageHandler";
+import { getImage, uploadImage, deleteImage } from "@/hooks/ImageHandler";
 import { patrimonio, Patrimonio } from "@/constants/Patrimonio";
 import { ThemedHeader } from '@/components/ui/ThemedHeader';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -47,9 +47,7 @@ export default function manegePat() {
         ? JSON.parse(params.patrimonioParam as string) as Patrimonio 
         : patrimonio;
 
-    console.log("PatrimonioData: ", patrimonioData.image.url);
     const [formData, setFormData] = useState(patrimonioData);
-    console.log("FormData: ", formData.image.url);
     const [image, setImage] = useState<any>(mode === "edit" 
         ? params.imageUrl
         : null);
@@ -120,10 +118,6 @@ export default function manegePat() {
      */
     const resetImage = async () => {
         setImage(null);
-        setFormData((prevState) => ({
-            ...prevState,
-            image: patrimonio.image
-        }));
         setImageCancel(true);
     };
 
@@ -195,25 +189,7 @@ export default function manegePat() {
         }
     };
 
-    const deleteImage = async (imageUrl: string): Promise<boolean> => {
-        try {
-            console.log("Tentando deletar a imagem.");
-    
-            console.log("Imagem URL: ", imageUrl);
-
-            // Cria uma referência ao arquivo no armazenamento
-            const fileRef = ref(storage, imageUrl);
-            // Deleta o arquivo
-            await deleteObject(fileRef);
-            console.log("Imagem deletada com sucesso!");
-            return true;
-        } catch (error: any) {
-            console.error("Erro ao deletar a imagem: ", error);
-            Alert.alert("Erro ao deletar a imagem!", error.message);
-            return false;
-        }
-    };
-
+    console.log(formData.image);
     /**
      * Faz o upload da imagem selecionada e salva a URL no formulário.
      */
@@ -229,8 +205,7 @@ export default function manegePat() {
 
             try {
                 if(imageCancel && mode === "edit"){
-                    console.log(formData.image.url);
-                    await deleteImage(formData.image.url);''
+                    await deleteImage(formData.image.url);
                 }
                 const imageUrl = await uploadImage(user.uid, image);
                 if (imageUrl) {
