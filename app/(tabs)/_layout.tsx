@@ -11,6 +11,7 @@ export default function Layout() {
       <Stack.Screen name="managePat" options={{}} />
       <Stack.Screen name="imageTesting" options={{}} />
       <Stack.Screen name="listing" options={{}} />
+      <Stack.Screen name="test" options={{}} />
     </Stack>
   );
 }

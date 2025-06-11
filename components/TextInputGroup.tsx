@@ -18,7 +18,7 @@ export function TextInputGroup({ inputs }: TextInputGroupProps) {
     return (
         <ThemedView style={styles.container}>
             {inputs.map((input, index) => {
-                 return (
+                return (
                     <ThemedView key={index} style={styles.inputWrapper}>
                         {/* Verifica se o campo tem um switch associado */}
                         {input.isSwitch ? (
