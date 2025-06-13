@@ -14,6 +14,7 @@ import { patrimonio, Patrimonio } from "@/constants/Patrimonio";
 import { ThemedHeader } from '@/components/ui/ThemedHeader';
 import { router, useLocalSearchParams } from 'expo-router';
 import { deleteObject, getDownloadURL, ref } from "firebase/storage";
+import { useForm } from 'react-hook-form';
 
 
 // Define the interface BEFORE using it
@@ -230,14 +231,24 @@ export default function manegePat() {
         }
     };
 
-    const resolveAdd = async () => {
+    const { control, handleSubmit, formState: { errors } } = useForm();
 
-        if (mode === "edit" && !imageCancel){
-            setIsAddingPatrimonio(true);
-        }else{
-            handleUploadImage();
+    const onSubmit = async (data: any) => {
+        if (Object.keys(errors).length > 0) {
+            Alert.alert('Erro', 'Por favor, corrija os erros antes de enviar.');
+            return;
         }
-    }
+
+        try {
+            if (mode === "edit" && !imageCancel) {
+                setIsAddingPatrimonio(true);
+            } else {
+                await handleUploadImage();
+            }
+        } catch (error) {
+            console.error('Erro ao enviar:', error);
+        }
+    };
 
     return (
         <ScrollableAreaView style={styles.safeArea}>
@@ -272,7 +283,7 @@ export default function manegePat() {
                 )}
 
                 {/* Inputs do formulário */}
-                <TextInputGroup inputs={inputs} />
+                <TextInputGroup inputs={inputs} control={control} errors={errors} />
 
                 {/* Grupo de checkboxes para conservação */}
                 <CheckboxGroup selectedCheckbox={formData.conservacao} onCheckboxChange={handleCheckboxChange} />
@@ -284,7 +295,7 @@ export default function manegePat() {
                 )}
 
                 {/* Botão para adicionar patrimônio */}
-                <ThemedButton style={styles.button} onPress={resolveAdd}>
+                <ThemedButton style={styles.button} onPress={handleSubmit(onSubmit)}>
                     <ThemedText style={styles.buttonText}>{finalButtonText}</ThemedText>
                 </ThemedButton>
 

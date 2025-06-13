@@ -32,9 +32,9 @@ export default function TabOneScreen() {
         });
     };
 
-    const image = async () => {
+    const test = async () => {
         router.push({
-            pathname: '/imageTesting',
+            pathname: '/test',
             params: { mode: "add" }
         });
     };
@@ -69,7 +69,7 @@ export default function TabOneScreen() {
                 <ThemedText style={styles.text}>Pesquisar</ThemedText>
             </ThemedButton>
 
-            <ThemedButton style={styles.button} onPress={image}>
+            <ThemedButton style={styles.button} onPress={test}>
                 <ThemedText style={styles.text}>Imagem</ThemedText>
             </ThemedButton>
         </ThemedView>
