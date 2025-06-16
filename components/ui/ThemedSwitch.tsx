@@ -25,6 +25,7 @@ export function ThemedSwitch({ lightColor, darkColor, value, onValueChange, ...o
             onValueChange={onValueChange}
             trackColor={{ true: trackColor }}
             thumbColor={ value ? '#045ccc:' : thumbColor }
+            
             style={styles.switch}
         />
     );

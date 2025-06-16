@@ -239,11 +239,20 @@ export default function manegePat() {
             return;
         }
 
+        if (!formData.patNum && !formData.atmNum) {
+            Alert.alert('Erro', 'Por favor, preencha o número de patrimônio ou ATM.');
+            return;
+        }
+
         try {
-            if (mode === "edit" && !imageCancel) {
-                setIsAddingPatrimonio(true);
+            if (formData.conservacao !== '') {
+                if (mode === "edit" && !imageCancel) {
+                    setIsAddingPatrimonio(true);
+                } else {
+                    await handleUploadImage();
+                }
             } else {
-                await handleUploadImage();
+                Alert.alert('Erro', 'Por favor, selecione uma opção de conservação.');
             }
         } catch (error) {
             console.error('Erro ao enviar:', error);

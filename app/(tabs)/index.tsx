@@ -70,7 +70,7 @@ export default function TabOneScreen() {
             </ThemedButton>
 
             <ThemedButton style={styles.button} onPress={test}>
-                <ThemedText style={styles.text}>Imagem</ThemedText>
+                <ThemedText style={styles.text}>test</ThemedText>
             </ThemedButton>
         </ThemedView>
     );

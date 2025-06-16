@@ -17,6 +17,7 @@ export const Colors = {
     cardShadow: '#DDDDDD',
     tint: '#007BFF',
     trackColor: '#007BFF',
+    falseTrackColor: '#8a8a8a',
     thumbColor: '#0599e8',
   },
   dark: {
@@ -32,6 +33,7 @@ export const Colors = {
     cardShadow: '#000000',
     tint: '#fa6747',
     trackColor: '#fa6747',
+    falseTrackColor: '#8a8a8a',
     thumbColor: '#d1563a',
   },
 };
