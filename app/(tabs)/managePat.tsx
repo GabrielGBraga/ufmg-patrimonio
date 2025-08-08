@@ -260,56 +260,54 @@ export default function manegePat() {
     };
 
     return (
-        <ScrollableAreaView style={styles.safeArea}>
-            <ThemedView style={styles.container}>
+        <ThemedView style={styles.container}>
 
-                {/* Header da página */}
-                <ThemedHeader title={title} arrowBack={() => {router.back()}}/>
+            {/* Header da página */}
+            <ThemedHeader title={title} arrowBack={() => {router.back()}}/>
 
-                {/* Botão para selecionar imagem */}
-                {!image ? (
-                    <ThemedView style={{flexDirection: 'row'}}>
-                        <ThemedButton style={styles.imageButton} onPress={() => handleSelectImage('Gallery')}>
-                            <ThemedText style={styles.buttonText}>Escolher uma imagem</ThemedText>
-                        </ThemedButton>
-                        <ThemedButton style={styles.imageButton} onPress={() => handleSelectImage('Camera')}>
-                            <ThemedText style={styles.buttonText}>Tirar foto</ThemedText>
-                        </ThemedButton>
-                    </ThemedView>
-                ) : (
-                    <ThemedView style={styles.imageContainer}>
-                        <Image
-                            source={{ uri: image }}
-                            style={[styles.image, {
-                                width: formData.image.width || 200,
-                                height: formData.image.height || 200,
-                            }]}
-                        />
-                        <ThemedButton style={styles.button} onPress={resetImage}>
-                            <ThemedText style={styles.buttonText}>Cancelar</ThemedText>
-                        </ThemedButton>
-                    </ThemedView>
-                )}
-
-                {/* Inputs do formulário */}
-                <TextInputGroup inputs={inputs} control={control} errors={errors} />
-
-                {/* Grupo de checkboxes para conservação */}
-                <CheckboxGroup selectedCheckbox={formData.conservacao} onCheckboxChange={handleCheckboxChange} />
-
-                {mode === "edit" && (
-                    <ThemedButton style={styles.button} onPress={deletePatrimonio}>
-                        <ThemedText style={styles.buttonText}>Deletar</ThemedText>
+            {/* Botão para selecionar imagem */}
+            {!image ? (
+                <ThemedView style={{flexDirection: 'row'}}>
+                    <ThemedButton style={styles.imageButton} onPress={() => handleSelectImage('Gallery')}>
+                        <ThemedText style={styles.buttonText}>Escolher uma imagem</ThemedText>
                     </ThemedButton>
-                )}
+                    <ThemedButton style={styles.imageButton} onPress={() => handleSelectImage('Camera')}>
+                        <ThemedText style={styles.buttonText}>Tirar foto</ThemedText>
+                    </ThemedButton>
+                </ThemedView>
+            ) : (
+                <ThemedView style={styles.imageContainer}>
+                    <Image
+                        source={{ uri: image }}
+                        style={[styles.image, {
+                            width: formData.image.width || 200,
+                            height: formData.image.height || 200,
+                        }]}
+                    />
+                    <ThemedButton style={styles.button} onPress={resetImage}>
+                        <ThemedText style={styles.buttonText}>Cancelar</ThemedText>
+                    </ThemedButton>
+                </ThemedView>
+            )}
 
-                {/* Botão para adicionar patrimônio */}
-                <ThemedButton style={styles.button} onPress={handleSubmit(onSubmit)}>
-                    <ThemedText style={styles.buttonText}>{finalButtonText}</ThemedText>
+            {/* Inputs do formulário */}
+            <TextInputGroup inputs={inputs} control={control} errors={errors} />
+
+            {/* Grupo de checkboxes para conservação */}
+            <CheckboxGroup selectedCheckbox={formData.conservacao} onCheckboxChange={handleCheckboxChange} />
+
+            {mode === "edit" && (
+                <ThemedButton style={styles.button} onPress={deletePatrimonio}>
+                    <ThemedText style={styles.buttonText}>Deletar</ThemedText>
                 </ThemedButton>
+            )}
 
-            </ThemedView>
-        </ScrollableAreaView>
+            {/* Botão para adicionar patrimônio */}
+            <ThemedButton style={styles.button} onPress={handleSubmit(onSubmit)}>
+                <ThemedText style={styles.buttonText}>{finalButtonText}</ThemedText>
+            </ThemedButton>
+
+        </ThemedView>
     );
 }
 

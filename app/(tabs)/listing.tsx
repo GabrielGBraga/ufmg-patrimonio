@@ -173,44 +173,42 @@ export default function listing() {
       />
     </SafeAreaView>
   ) : (
-    <SafeAreaView style={styles.safeArea}>
-      <ThemedView style={styles.safeArea}>
-        {/* Header da página */}
-        <ThemedHeader title="Pesquisar Patrimonio" arrowBack={() => {router.back()}}/>
+    <ThemedView style={styles.safeArea}>
+      {/* Header da página */}
+      <ThemedHeader title="Pesquisar Patrimonio" arrowBack={() => {router.back()}}/>
 
-        {/* Input do número de patrimonio */}
-        <ThemedView style={styles.row}>
-          <ThemedTextInput
-            placeholder="Número do Patrimônio"
-            value={patNum}
-            onChangeText={(themedText) => setPatNum(themedText)}
-            style={styles.input}
-          />
-
-          <ThemedButton  onPress={fetchPatrimonio}>
-            <ThemedText type="defaultSemiBold">Pesquisar</ThemedText>
-          </ThemedButton>
-        </ThemedView>
-
-        {/* Botão de escanear */}
-        <ThemedButton
-          
-          onPress={() => {
-            setScanBool(true);
-          }}
-        >
-          <ThemedText type="defaultSemiBold">Escanear</ThemedText>
-        </ThemedButton>
-
-        {/* Listagem do patrimonio */}
-        <FlatList
-          data={patrimonioList}
-          renderItem={renderItem}
-          keyExtractor={(item) => docId}
-          contentContainerStyle={styles.listContainer}
+      {/* Input do número de patrimonio */}
+      <ThemedView style={styles.row}>
+        <ThemedTextInput
+          placeholder="Número do Patrimônio"
+          value={patNum}
+          onChangeText={(themedText) => setPatNum(themedText)}
+          style={styles.input}
         />
+
+        <ThemedButton  onPress={fetchPatrimonio}>
+          <ThemedText type="defaultSemiBold">Pesquisar</ThemedText>
+        </ThemedButton>
       </ThemedView>
-    </SafeAreaView>
+
+      {/* Botão de escanear */}
+      <ThemedButton
+        
+        onPress={() => {
+          setScanBool(true);
+        }}
+      >
+        <ThemedText type="defaultSemiBold">Escanear</ThemedText>
+      </ThemedButton>
+
+      {/* Listagem do patrimonio */}
+      <FlatList
+        data={patrimonioList}
+        renderItem={renderItem}
+        keyExtractor={(item) => docId}
+        contentContainerStyle={styles.listContainer}
+      />
+    </ThemedView>
   );
 }
 
