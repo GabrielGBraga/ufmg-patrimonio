@@ -15,6 +15,7 @@ import { ThemedHeader } from '@/components/ui/ThemedHeader';
 import { router, useLocalSearchParams } from 'expo-router';
 import { deleteObject, getDownloadURL, ref } from "firebase/storage";
 import { useForm } from 'react-hook-form';
+import { ThemedSwitch } from '@/components/ui/ThemedSwitch';
 
 
 // Define the interface BEFORE using it
@@ -53,7 +54,7 @@ export default function manegePat() {
         ? params.imageUrl
         : null);
     const [isAddingPatrimonio, setIsAddingPatrimonio] = useState(false);
-    const [boolAtm, setBollAtm] = useState(false);
+    const [boolAtm, setBoolAtm] = useState(false);
     const [loading, setLoading] = useState(false);
     const [imageCancel, setImageCancel] = useState(false);
 
@@ -124,23 +125,24 @@ export default function manegePat() {
 
     // Configurações dinâmicas de entrada para o TextInputGroup.
     const inputConfigs = [
+        { label: 'Número ATM', placeholder: 'Digite o número ATM', key: 'atmNum', isSwitch: true, switchKey: boolAtm },
         { label: 'Número de Patrimônio', placeholder: 'Digite o número de patrimônio', key: 'patNum' },
-        { label: 'Número ATM', placeholder: 'Digite o número ATM', key: 'atmNum', isSwitch: true, switchKey: 'boolAtm' },
         { label: 'Descrição', placeholder: 'Digite a descrição', key: 'descricao' },
         { label: 'Valor', placeholder: 'Digite o valor', key: 'valor' },
         { label: 'Responsável', placeholder: 'Digite o nome do responsável', key: 'responsavel' },
         { label: 'Sala', placeholder: 'Digite o numero da sala', key: 'sala'}
     ];
 
-    const inputs = inputConfigs.map((config) => ({
-        label: config.label,
-        placeholder: config.placeholder,
-        inputValue: formData[config.key],
-        onInputChange: (text: string) => setFormData((prevState) => ({ ...prevState, [config.key]: text })),
-        isSwitch: config.isSwitch || false,
-        switchValue: config.isSwitch ? boolAtm : false,
-        onSwitchChange: config.isSwitch ? (value: boolean) => setBollAtm(value) : () => {},
+    const inputs = inputConfigs
+        // remove ATM input if the switch is off
+        .filter(config => !config.isSwitch || config.switchKey)
+        .map((config) => ({
+            label: config.label,
+            placeholder: config.placeholder,
+            inputValue: formData[config.key],
+            onInputChange: (text: string) => setFormData((prevState) => ({ ...prevState, [config.key]: text })),
     }));
+
 
     /**
      * Deleta o patriomonio
@@ -290,6 +292,14 @@ export default function manegePat() {
                 </ThemedView>
             )}
 
+            <ThemedView style={{alignItems: 'center', marginBottom: 20}}>
+                {/* Componente de switch */}
+                <ThemedSwitch
+                    value={boolAtm} // Estado do switch (ligado/desligado)
+                    onValueChange={() => {setBoolAtm(!boolAtm)}} // Função para alternar o estado do switch
+                />
+            </ThemedView>
+            
             {/* Inputs do formulário */}
             <TextInputGroup inputs={inputs} control={control} errors={errors} />
 
