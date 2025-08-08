@@ -174,7 +174,7 @@ export default function listing() {
       />
     </SafeAreaView>
   ) : (
-    <ScrollableAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea}>
 
       <ThemedView style={styles.safeArea}>
         {/* Header da página */}
@@ -212,7 +212,7 @@ export default function listing() {
           contentContainerStyle={styles.listContainer}
         />
       </ThemedView>
-    </ScrollableAreaView>
+    </SafeAreaView>
   );
 }
 
