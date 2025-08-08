@@ -27,6 +27,7 @@ import { ThemedHeader } from "@/components/ui/ThemedHeader";
 import { router } from "expo-router";
 import { useIsFocused } from "@react-navigation/native";
 import { CameraScreen } from "@/components/ui/CameraScreen";
+import { ScrollableAreaView } from "@/components/layout/ScrollableAreaView";
 
 /**
  * Este componente renderiza uma tela para pesquisar e exibir patrimônios pelo número.
@@ -173,42 +174,45 @@ export default function listing() {
       />
     </SafeAreaView>
   ) : (
-    <ThemedView style={styles.safeArea}>
-      {/* Header da página */}
-      <ThemedHeader title="Pesquisar Patrimonio" arrowBack={() => {router.back()}}/>
+    <ScrollableAreaView style={styles.safeArea}>
 
-      {/* Input do número de patrimonio */}
-      <ThemedView style={styles.row}>
-        <ThemedTextInput
-          placeholder="Número do Patrimônio"
-          value={patNum}
-          onChangeText={(themedText) => setPatNum(themedText)}
-          style={styles.input}
-        />
+      <ThemedView style={styles.safeArea}>
+        {/* Header da página */}
+        <ThemedHeader title="Pesquisar Patrimonio" arrowBack={() => {router.back()}}/>
 
-        <ThemedButton  onPress={fetchPatrimonio}>
-          <ThemedText type="defaultSemiBold">Pesquisar</ThemedText>
+        {/* Input do número de patrimonio */}
+        <ThemedView style={styles.row}>
+          <ThemedTextInput
+            placeholder="Número do Patrimônio"
+            value={patNum}
+            onChangeText={(themedText) => setPatNum(themedText)}
+            style={styles.input}
+          />
+
+          <ThemedButton  onPress={fetchPatrimonio}>
+            <ThemedText type="defaultSemiBold">Pesquisar</ThemedText>
+          </ThemedButton>
+        </ThemedView>
+
+        {/* Botão de escanear */}
+        <ThemedButton
+          
+          onPress={() => {
+            setScanBool(true);
+          }}
+        >
+          <ThemedText type="defaultSemiBold">Escanear</ThemedText>
         </ThemedButton>
+
+        {/* Listagem do patrimonio */}
+        <FlatList
+          data={patrimonioList}
+          renderItem={renderItem}
+          keyExtractor={(item) => docId}
+          contentContainerStyle={styles.listContainer}
+        />
       </ThemedView>
-
-      {/* Botão de escanear */}
-      <ThemedButton
-        
-        onPress={() => {
-          setScanBool(true);
-        }}
-      >
-        <ThemedText type="defaultSemiBold">Escanear</ThemedText>
-      </ThemedButton>
-
-      {/* Listagem do patrimonio */}
-      <FlatList
-        data={patrimonioList}
-        renderItem={renderItem}
-        keyExtractor={(item) => docId}
-        contentContainerStyle={styles.listContainer}
-      />
-    </ThemedView>
+    </ScrollableAreaView>
   );
 }
 

@@ -1,4 +1,4 @@
-import {ActivityIndicator, Alert, Image, StyleSheet} from 'react-native';
+import {ActivityIndicator, Alert, Image, SafeAreaView, StyleSheet} from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { db, storage } from '@/FirebaseConfig';
 import { addDoc, collection, deleteDoc, doc, updateDoc, waitForPendingWrites } from 'firebase/firestore';
@@ -263,60 +263,62 @@ export default function manegePat() {
 
     return (
         <ThemedView style={styles.container}>
+            <ScrollableAreaView style={styles.safeArea}>
 
-            {/* Header da página */}
-            <ThemedHeader title={title} arrowBack={() => {router.back()}}/>
+                {/* Header da página */}
+                <ThemedHeader title={title} arrowBack={() => {router.back()}}/>
 
-            {/* Botão para selecionar imagem */}
-            {!image ? (
-                <ThemedView style={{flexDirection: 'row'}}>
-                    <ThemedButton style={styles.imageButton} onPress={() => handleSelectImage('Gallery')}>
-                        <ThemedText style={styles.buttonText}>Escolher uma imagem</ThemedText>
-                    </ThemedButton>
-                    <ThemedButton style={styles.imageButton} onPress={() => handleSelectImage('Camera')}>
-                        <ThemedText style={styles.buttonText}>Tirar foto</ThemedText>
-                    </ThemedButton>
-                </ThemedView>
-            ) : (
-                <ThemedView style={styles.imageContainer}>
-                    <Image
-                        source={{ uri: image }}
-                        style={[styles.image, {
-                            width: formData.image.width || 200,
-                            height: formData.image.height || 200,
-                        }]}
+                {/* Botão para selecionar imagem */}
+                {!image ? (
+                    <ThemedView style={{flexDirection: 'row'}}>
+                        <ThemedButton style={styles.imageButton} onPress={() => handleSelectImage('Gallery')}>
+                            <ThemedText style={styles.buttonText}>Escolher uma imagem</ThemedText>
+                        </ThemedButton>
+                        <ThemedButton style={styles.imageButton} onPress={() => handleSelectImage('Camera')}>
+                            <ThemedText style={styles.buttonText}>Tirar foto</ThemedText>
+                        </ThemedButton>
+                    </ThemedView>
+                ) : (
+                    <ThemedView style={styles.imageContainer}>
+                        <Image
+                            source={{ uri: image }}
+                            style={[styles.image, {
+                                width: formData.image.width || 200,
+                                height: formData.image.height || 200,
+                            }]}
+                        />
+                        <ThemedButton style={styles.button} onPress={resetImage}>
+                            <ThemedText style={styles.buttonText}>Cancelar</ThemedText>
+                        </ThemedButton>
+                    </ThemedView>
+                )}
+
+                <ThemedView style={{alignItems: 'center', marginBottom: 20}}>
+                    {/* Componente de switch */}
+                    <ThemedSwitch
+                        value={boolAtm} // Estado do switch (ligado/desligado)
+                        onValueChange={() => {setBoolAtm(!boolAtm)}} // Função para alternar o estado do switch
                     />
-                    <ThemedButton style={styles.button} onPress={resetImage}>
-                        <ThemedText style={styles.buttonText}>Cancelar</ThemedText>
-                    </ThemedButton>
                 </ThemedView>
-            )}
+                
+                {/* Inputs do formulário */}
+                <TextInputGroup inputs={inputs} control={control} errors={errors} />
 
-            <ThemedView style={{alignItems: 'center', marginBottom: 20}}>
-                {/* Componente de switch */}
-                <ThemedSwitch
-                    value={boolAtm} // Estado do switch (ligado/desligado)
-                    onValueChange={() => {setBoolAtm(!boolAtm)}} // Função para alternar o estado do switch
-                />
-            </ThemedView>
-            
-            {/* Inputs do formulário */}
-            <TextInputGroup inputs={inputs} control={control} errors={errors} />
+                {/* Grupo de checkboxes para conservação */}
+                <CheckboxGroup selectedCheckbox={formData.conservacao} onCheckboxChange={handleCheckboxChange} />
 
-            {/* Grupo de checkboxes para conservação */}
-            <CheckboxGroup selectedCheckbox={formData.conservacao} onCheckboxChange={handleCheckboxChange} />
+                {mode === "edit" && (
+                    <ThemedButton style={styles.button} onPress={deletePatrimonio}>
+                        <ThemedText style={styles.buttonText}>Deletar</ThemedText>
+                    </ThemedButton>
+                )}
 
-            {mode === "edit" && (
-                <ThemedButton style={styles.button} onPress={deletePatrimonio}>
-                    <ThemedText style={styles.buttonText}>Deletar</ThemedText>
+                {/* Botão para adicionar patrimônio */}
+                <ThemedButton style={styles.button} onPress={handleSubmit(onSubmit)}>
+                    <ThemedText style={styles.buttonText}>{finalButtonText}</ThemedText>
                 </ThemedButton>
-            )}
 
-            {/* Botão para adicionar patrimônio */}
-            <ThemedButton style={styles.button} onPress={handleSubmit(onSubmit)}>
-                <ThemedText style={styles.buttonText}>{finalButtonText}</ThemedText>
-            </ThemedButton>
-
+            </ScrollableAreaView>
         </ThemedView>
     );
 }
