@@ -69,9 +69,6 @@ export default function TabOneScreen() {
                 <ThemedText style={styles.text}>Pesquisar</ThemedText>
             </ThemedButton>
 
-            <ThemedButton style={styles.button} onPress={test}>
-                <ThemedText style={styles.text}>test</ThemedText>
-            </ThemedButton>
         </ThemedView>
     );
 }
