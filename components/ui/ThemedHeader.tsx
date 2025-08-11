@@ -7,7 +7,7 @@ export type ThemedHeaderProps = TextProps & {
   lightColor?: string;
   darkColor?: string;
   title: string;
-  arrowBack: () => void; // Accepts a function or a direct value
+  arrowBack: () => void;
 };
 
 export function ThemedHeader({ 
@@ -22,18 +22,30 @@ export function ThemedHeader({
   const textColor = useThemeColor({}, 'text');
 
   return (
-    <View style={{ flexDirection: "row", alignItems: "flex-start", padding: 50, backgroundColor }}>
+    <View 
+      style={{
+        flexDirection: "row",
+        alignItems: "center", // Centraliza verticalmente
+        paddingHorizontal: 16, // padding proporcional
+        paddingVertical: 12,
+        backgroundColor
+      }}
+    >
       {/* Go Back Icon */}
-      <TouchableOpacity onPress={arrowBack} style={{ zIndex: 1 }}>
+      <TouchableOpacity onPress={arrowBack} style={{ marginRight: 12 }}>
         <Ionicons name="arrow-back" size={24} color={textColor} />
       </TouchableOpacity>
 
-      {/* Centered Text */}
-      <View style={{ flex: 1, alignItems: "center", position: "absolute", left: 0, right: 0 }}>
-        <ThemedText type='title' style={style} {...otherProps}>
-          {title}
-        </ThemedText>
-      </View>
+      <ThemedText
+        type='title'
+        style={[
+          { flexShrink: 1, flexWrap: 'wrap', color: textColor },
+          style
+        ]}
+        {...otherProps}
+      >
+        {title}
+      </ThemedText>
     </View>
   );
 }
