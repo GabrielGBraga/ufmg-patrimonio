@@ -198,8 +198,6 @@ export default function manegePat() {
 
         if(user && image){
 
-            const email = user.email;
-
             setLoading(true);
 
             setIsAddingPatrimonio(true);
@@ -216,7 +214,6 @@ export default function manegePat() {
                             ...prevState.image,
                             url: imageUrl,
                         },
-                        email: email ?? ""
                     }));
                 } else {
                     console.log('Erro ao fazer upload da imagem');
@@ -245,7 +242,24 @@ export default function manegePat() {
             return;
         }
 
+        if (!user) {
+            Alert.alert('Erro', 'Nenhum usuário encontrado.');
+            return;
+        }
+
+        console.log("onsubmit");
+
         try {
+
+            const lastEditedBy = user.email;
+            const lastEditedAt = new Date().toLocaleDateString('en-GB');
+
+            setFormData((prevState) => ({
+                ...prevState,
+                lastEditedBy: lastEditedBy || 'Nenhum email encontrado',
+                lastEditedAt: lastEditedAt,
+            }));
+
             if (formData.conservacao !== '') {
                 if (mode === "edit" && !imageCancel) {
                     setIsAddingPatrimonio(true);

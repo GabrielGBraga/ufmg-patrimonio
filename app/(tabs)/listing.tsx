@@ -138,7 +138,7 @@ export default function listing() {
           />
         </View>
         {Object.keys(patrimonio).map((key) =>
-          key !== "image" && key !== "email" ? (
+          key !== "image" && key !== "lastEditedBy" && key !== "lastEditedAt" ? (
             <View style={styles.row} key={key}>
               <ThemedText style={styles.label}>
                 {key.charAt(0).toUpperCase() + key.slice(1)}:{" "}
@@ -148,8 +148,8 @@ export default function listing() {
           ) : null
         )}
         <View style={styles.row}>
-          <ThemedText style={styles.label}>Último Editor</ThemedText>
-          <ThemedText style={styles.data}>{item.email}</ThemedText>
+          <ThemedText style={styles.label}>Última Edição:</ThemedText>
+          <ThemedText style={styles.data}>{item.lastEditedBy} - {item.lastEditedAt}</ThemedText>
           <Ionicons
             name="pencil"
             size={25}

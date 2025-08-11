@@ -15,7 +15,8 @@ export const patrimonio = {
     conservacao: '',
     responsavel: '',
     sala: '',
-    email: ''
+    lastEditedBy: '',
+    lastEditedAt: ''
 };
 
 export type Patrimonio = typeof patrimonio;
