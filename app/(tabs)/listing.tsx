@@ -169,7 +169,9 @@ export default function listing() {
       
       <CameraScreen
         onBarcodeScanned={({ type, data }) => {
+          setPatNum(data);
           console.log(`Scanned: ${type} - ${data}`);
+          setScanBool(false)
         }}
       />
     </SafeAreaView>
