@@ -1,7 +1,7 @@
 import {ActivityIndicator, Alert, Image, SafeAreaView, StyleSheet} from 'react-native';
 import React, { useEffect, useState } from 'react';
-import { db, storage } from '@/FirebaseConfig';
-import { addDoc, collection, deleteDoc, doc, updateDoc, waitForPendingWrites } from 'firebase/firestore';
+import { db } from '@/FirebaseConfig';
+import { addDoc, collection, deleteDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { ThemedView } from "@/components/ui/ThemedView";
@@ -13,26 +13,13 @@ import { getImage, uploadImage, deleteImage } from "@/hooks/ImageHandler";
 import { patrimonio, Patrimonio } from "@/constants/Patrimonio";
 import { ThemedHeader } from '@/components/ui/ThemedHeader';
 import { router, useLocalSearchParams } from 'expo-router';
-import { deleteObject, getDownloadURL, ref } from "firebase/storage";
 import { useForm } from 'react-hook-form';
-import { ThemedSwitch } from '@/components/ui/ThemedSwitch';
 
-
-// Define the interface BEFORE using it
-interface LocalSearchParams {
-    mode?: string;
-    patrimonioParam?: string;
-    imageUrl?: string;
-    patrimonioId?: string;
-}
-
-// noinspection JSUnusedGlobalSymbols
 export default function manegePat() {
     
-    const params = useLocalSearchParams() as LocalSearchParams; // Type assertion
-
-    const mode = params.mode;
-    const docId = params.patrimonioId ? JSON.parse(params.patrimonioId) : null;
+    const params = useLocalSearchParams();
+    const mode = params.mode as string;
+    const docId = params.patrimonioId as string;
 
     const title = mode === "edit" ? 'Editar Patrimônio' : "Adicionar Patrimônio";
     const finalButtonText = mode === "edit" ? 'Atualizar' : "Adicionar";
@@ -40,260 +27,216 @@ export default function manegePat() {
     const auth = getAuth();
     const user = auth.currentUser;
 
-    // Referência à coleção "patrimonios" no Firestore.
-    const patrimoniosRef = mode === "edit" && docId 
-        ? doc(db, "patrimonios", docId) 
-        : collection(db, 'patrimonios');
-    
-    const patrimonioData = (params.patrimonioParam && mode === "edit") 
-        ? JSON.parse(params.patrimonioParam as string) as Patrimonio 
-        : patrimonio;
-
-    const [formData, setFormData] = useState(patrimonioData);
-    const [image, setImage] = useState<any>(mode === "edit" 
-        ? params.imageUrl
-        : null);
-    const [isAddingPatrimonio, setIsAddingPatrimonio] = useState(false);
+    const [formData, setFormData] = useState<Patrimonio | null>(mode === 'add' ? patrimonio : null);
+    const [image, setImage] = useState<string | null>(null);
     const [boolAtm, setBoolAtm] = useState(false);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(mode === 'edit');
     const [imageCancel, setImageCancel] = useState(false);
 
-    /**
-     * Efeito colateral para adicionar um patrimônio após a URL da imagem ser atualizada.
-     */
     useEffect(() => {
-        if (isAddingPatrimonio) {
-            console.log("before addPatrimonio");
-            addPatrimonio();
-            setIsAddingPatrimonio(false);
-        }
-    }, [isAddingPatrimonio]);
-
-    /**
-     * Manipula a alteração nos checkboxes, alternando o estado selecionado.
-     */
-    const handleCheckboxChange = (value: string) => {
-        setFormData((prevState) => ({
-            ...prevState,
-            conservacao: value === prevState.conservacao ? patrimonio.conservacao : value,
-        }));
-    };
-
-    /**
-     * Adiciona um novo patrimônio no Firestore após validar os dados.
-     */
-    const addPatrimonio = async () => {
-        console.log("addPatrimonio");
-        try {
-            if (user) {
-                console.log("Adding patrimonio");
-                
-                if (mode === "add") {
-                    // Ensure we are using a CollectionReference
-                    console.log("to add")
-                    await addDoc(collection(db, "patrimonios"), { ...formData });
-                    console.log("after add")
-                } else if (mode === "edit" && docId) {
-                    // Ensure we are using a DocumentReference
-                    await updateDoc(doc(db, "patrimonios", docId), { ...formData });
-                } else {
-                    console.error("Invalid mode or missing docId");
+        if (mode === 'edit' && docId) {
+            const fetchPatrimonioData = async () => {
+                const docRef = doc(db, 'patrimonios', docId);
+                try {
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        const patrimonioData = docSnap.data() as Patrimonio;
+                        setFormData(patrimonioData);
+                        if (patrimonioData.image && patrimonioData.image.url) {
+                            setImage(patrimonioData.image.url);
+                        }
+                    } else {
+                        Alert.alert("Erro", "Patrimônio não encontrado.");
+                        router.back();
+                    }
+                } catch (error) {
+                    console.error("Erro ao buscar dados do patrimônio:", error);
+                    Alert.alert("Erro", "Não foi possível carregar os dados.");
+                } finally {
+                    setLoading(false);
                 }
-                console.log("Added")
-                // Reseta o formulário e imagem após salvar.
-                setFormData(patrimonio);
-                await resetImage();
-                setLoading(false);
-                
-                mode === "add" ? alert('Patrimonio adicionado') : alert('Patrimonio Editado');
-                
-                router.back()
-            } else {
-                console.error('Não há usuário logado');
-            }
-        } catch (error) {
-            console.error("Erro ao tentar adicionar patrimonio: ", error)
+            };
+            fetchPatrimonioData();
         }
-        
+    }, [mode, docId]);
+
+    const handleCheckboxChange = (value: string) => {
+        // ✅ **CORREÇÃO**: Adicionada verificação de segurança para o estado nulo.
+        setFormData((prevState) => {
+            if (!prevState) return null;
+            return {
+                ...prevState,
+                conservacao: value === prevState.conservacao ? '' : value,
+            };
+        });
     };
 
-    /**
-     * Reseta o estado da imagem para o padrão.
-     */
     const resetImage = async () => {
         setImage(null);
         setImageCancel(true);
     };
 
-    // Configurações dinâmicas de entrada para o TextInputGroup.
-    const inputConfigs = [
+    const inputs = formData ? [
         { label: 'Número de Patrimônio', placeholder: 'Digite o número de patrimônio', key: 'patNum' },
         { label: 'Número ATM', placeholder: 'Digite o número ATM', key: 'atmNum', isSwitch: true, switchKey: boolAtm },
         { label: 'Descrição', placeholder: 'Digite a descrição', key: 'descricao' },
         { label: 'Valor', placeholder: 'Digite o valor', key: 'valor' },
         { label: 'Responsável', placeholder: 'Digite o nome do responsável', key: 'responsavel' },
         { label: 'Sala', placeholder: 'Digite o numero da sala', key: 'sala'}
-    ];
-
-    const inputs = inputConfigs.map((config) => ({
+    ].map((config) => ({
         label: config.label,
         placeholder: config.placeholder,
-        inputValue: formData[config.key],
-        onInputChange: (text: string) => setFormData((prevState) => ({ ...prevState, [config.key]: text })),
+        inputValue: formData[config.key as keyof Patrimonio] as string,
+        // ✅ **CORREÇÃO**: Adicionada verificação de segurança para o estado nulo.
+        onInputChange: (text: string) => setFormData(prevState => prevState ? { ...prevState, [config.key]: text } : null),
         isSwitch: config.isSwitch || false,
         switchValue: config.isSwitch ? boolAtm : false,
         onSwitchChange: config.isSwitch ? (value: boolean) => setBoolAtm(value) : () => {},
-    }));
+    })) : [];
 
-    /**
-     * Deleta o patriomonio
-     */
     const deletePatrimonio = async () => {
         if (docId) {
-            try {
-                await deleteDoc(doc(db, "patrimonios", docId));
-                console.log("Patrimonio deleted successfully");
-                router.back()
-            } catch (error) {
-                console.error("Error deleting patrimonio:", error);
-            }
-        } else {
-            console.warn("docId is undefined. Cannot delete patrimonio.");
-            //Or you can throw an error.
-            //throw new Error("docId is undefined");
-        }
-    };
-    
-    /**
-     * Manipula a seleção de imagem e atualiza os dados do formulário.
-     */
-    const handleSelectImage = async (selectionType: 'Camera'|'Gallery') => {
-        try {
-            const result = await getImage(selectionType);
-            console.log("Image received: ", !!result);
-            if (result) {
-                setImage(result.uri);
-                setFormData((prevState) => ({
-                    ...prevState,
-                    image: {
-                        ...prevState.image,
-                        height: result.height,
-                        width: result.width,
-                    }
-                }));
-            } else {
-                console.log('Nenhuma imagem selecionada');
-            }
-        } catch (error) {
-            console.error('Erro ao escolher a imagem:', error);
             Alert.alert(
-                'Erro',
-                'Não foi possível selecionar a imagem. Por favor, tente novamente.'
+                "Confirmar Exclusão",
+                "Você tem certeza que deseja deletar este patrimônio?",
+                [
+                    { text: "Cancelar", style: "cancel" },
+                    {
+                        text: "Deletar",
+                        style: "destructive",
+                        onPress: async () => {
+                            try {
+                                setLoading(true);
+                                if (formData?.image?.url) {
+                                    await deleteImage(formData.image.url);
+                                }
+                                await deleteDoc(doc(db, "patrimonios", docId));
+                                Alert.alert("Sucesso", "Patrimônio deletado.");
+                                router.back();
+                            } catch (error) {
+                                setLoading(false);
+                                console.error("Erro ao deletar patrimônio:", error);
+                                Alert.alert("Erro", "Não foi possível deletar o patrimônio.");
+                            }
+                        }
+                    }
+                ]
             );
         }
     };
-
-    /**
-     * Faz o upload da imagem selecionada e salva a URL no formulário.
-     */
-    const handleUploadImage = async () => {
-
-        if(user && image){
-
-            setLoading(true);
-
-            try {
-                if(imageCancel && mode === "edit"){
-                    await deleteImage(formData.image.url);
-                }
-                const imageUrl = await uploadImage(user.uid, image);
-                if (imageUrl) {
-                    setFormData((prevState) => ({
+    
+    const handleSelectImage = async (selectionType: 'Camera' | 'Gallery') => {
+        try {
+            const result = await getImage(selectionType);
+            if (result) {
+                setImage(result.uri);
+                setImageCancel(false); // Nova imagem selecionada, então não está "cancelada"
+                // ✅ **CORREÇÃO**: Adicionada verificação de segurança para o estado nulo.
+                setFormData((prevState) => {
+                    if (!prevState) return null;
+                    return {
                         ...prevState,
                         image: {
                             ...prevState.image,
-                            url: imageUrl,
-                        },
-                    }));
-                    setIsAddingPatrimonio(true);
-                } else {
-                    console.log('Erro ao fazer upload da imagem');
-                    Alert.alert('Erro', 'Não foi possível fazer o upload da imagem.');
-                }
-                console.log("Image uploaded and formData updated");
-            } catch (error) {
-                console.error('Erro no upload da imagem:', error);
-                Alert.alert('Erro', 'Ocorreu um erro durante o upload da imagem. Por favor, tente novamente.');
+                            url: prevState.image?.url || '', // Mantém a URL antiga por enquanto
+                            height: result.height,
+                            width: result.width,
+                        }
+                    };
+                });
             }
-        }else{
-            Alert.alert('Erro', 'Usuário ou imagem não encontrados!');
-                return;
+        } catch (error) {
+            console.error('Erro ao escolher a imagem:', error);
+            Alert.alert('Erro', 'Não foi possível selecionar a imagem.');
         }
     };
 
     const { control, handleSubmit, formState: { errors } } = useForm();
 
-    const onSubmit = async (data: any) => {
-
-        console.log('onSubmit');
-
-        if (Object.keys(errors).length > 0) {
-            Alert.alert('Erro', 'Por favor, corrija os erros antes de enviar.');
-            return;
+    // ✅ **LÓGICA DE SUBMISSÃO REATORADA**
+    // Esta função agora controla todo o fluxo de salvar os dados.
+    const onSubmit = async () => {
+        if (!formData || !user) {
+            return Alert.alert('Erro', 'Dados do formulário ou usuário não encontrados.');
         }
-
         if (!formData.patNum && !formData.atmNum) {
-            Alert.alert('Erro', 'Por favor, preencha o número de patrimônio ou ATM.');
-            return;
+            return Alert.alert('Erro', 'Preencha o número de patrimônio ou ATM.');
+        }
+        if (!formData.conservacao) {
+            return Alert.alert('Erro', 'Selecione uma opção de conservação.');
         }
 
-        if (!user) {
-            Alert.alert('Erro', 'Nenhum usuário encontrado.');
-            return;
-        }
+        setLoading(true);
 
         try {
+            // Clona os dados atuais para evitar mutações diretas no estado.
+            let dataToSave: Patrimonio = {
+                ...formData,
+                lastEditedBy: user.email || 'N/A',
+                lastEditedAt: new Date().toLocaleDateString('pt-BR'),
+            };
 
-            const lastEditedBy = user.email;
-            const lastEditedAt = new Date().toLocaleDateString('en-GB');
-
-            setFormData((prevState) => ({
-                ...prevState,
-                lastEditedBy: lastEditedBy || 'Nenhum email encontrado',
-                lastEditedAt: lastEditedAt,
-            }));
-
-            if (formData.conservacao !== '') {
-                if (mode === "edit" && !imageCancel) {
-                    console.log("Editing without changing image");
-                    setIsAddingPatrimonio(true);
-                } else {
-                    console.log("Uploading new image");
-                    await handleUploadImage();
-                }
-            } else {
-                Alert.alert('Erro', 'Por favor, selecione uma opção de conservação.');
+            const newImageSelected = image && (!formData.image?.url || image !== formData.image.url);
+            
+            // Caso 1: Deletar a imagem existente sem adicionar uma nova
+            if (imageCancel && mode === 'edit' && formData.image?.url) {
+                await deleteImage(formData.image.url);
+                dataToSave.image = { url: '', height: 0, width: 0 };
             }
+            // Caso 2: Fazer upload de uma nova imagem
+            else if (newImageSelected) {
+                // Se estiver editando, apague a imagem antiga primeiro
+                if (mode === 'edit' && formData.image?.url) {
+                    await deleteImage(formData.image.url);
+                }
+                const newImageUrl = await uploadImage(user.uid, image);
+                if (newImageUrl) {
+                    dataToSave.image.url = newImageUrl;
+                } else {
+                    throw new Error("Falha no upload da imagem.");
+                }
+            }
+
+            // Salva os dados no Firestore
+            if (mode === "add") {
+                await addDoc(collection(db, "patrimonios"), dataToSave);
+            } else if (mode === "edit" && docId) {
+                await updateDoc(doc(db, "patrimonios", docId), { ...dataToSave });
+            }
+
+            Alert.alert('Sucesso', mode === "add" ? 'Patrimônio adicionado!' : 'Patrimônio atualizado!');
+            router.back();
+
         } catch (error) {
-            console.error('Erro ao enviar:', error);
+            console.error('Erro ao salvar:', error);
+            Alert.alert('Erro', 'Ocorreu um erro ao salvar o patrimônio.');
+            setLoading(false);
         }
     };
 
+    if (loading) {
+        return (
+            <ThemedView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <ActivityIndicator size="large" />
+                <ThemedText>Carregando...</ThemedText>
+            </ThemedView>
+        );
+    }
+    
+    if (!formData) return null;
+
     return (
         <ThemedView style={styles.container}>
-            <ScrollableAreaView style={styles.safeArea}>
-
-                {/* Header da página */}
+            <ScrollableAreaView>
                 <ThemedHeader title={title} arrowBack={() => {router.back()}}/>
 
-                {/* Botão para selecionar imagem */}
                 {!image ? (
                     <ThemedView style={{flexDirection: 'row'}}>
                         <ThemedButton style={styles.imageButton} onPress={() => handleSelectImage('Gallery')}>
-                            <ThemedText style={styles.buttonText}>Escolher uma imagem</ThemedText>
+                            <ThemedText style={styles.buttonText}>Escolher Imagem</ThemedText>
                         </ThemedButton>
                         <ThemedButton style={styles.imageButton} onPress={() => handleSelectImage('Camera')}>
-                            <ThemedText style={styles.buttonText}>Tirar foto</ThemedText>
+                            <ThemedText style={styles.buttonText}>Tirar Foto</ThemedText>
                         </ThemedButton>
                     </ThemedView>
                 ) : (
@@ -301,29 +244,25 @@ export default function manegePat() {
                         <Image
                             source={{ uri: image }}
                             style={[styles.image, {
-                                width: formData.image.width || 200,
-                                height: formData.image.height || 200,
+                                width: formData.image?.width || 200,
+                                height: formData.image?.height || 200,
                             }]}
                         />
                         <ThemedButton style={styles.button} onPress={resetImage}>
-                            <ThemedText style={styles.buttonText}>Cancelar</ThemedText>
+                            <ThemedText style={styles.buttonText}>Remover Imagem</ThemedText>
                         </ThemedButton>
                     </ThemedView>
                 )}
                 
-                {/* Inputs do formulário */}
                 <TextInputGroup inputs={inputs} control={control} errors={errors} />
-
-                {/* Grupo de checkboxes para conservação */}
                 <CheckboxGroup selectedCheckbox={formData.conservacao} onCheckboxChange={handleCheckboxChange} />
 
                 {mode === "edit" && (
-                    <ThemedButton style={styles.button} onPress={deletePatrimonio}>
+                    <ThemedButton style={styles.deleteButton} onPress={deletePatrimonio}>
                         <ThemedText style={styles.buttonText}>Deletar</ThemedText>
                     </ThemedButton>
                 )}
 
-                {/* Botão para adicionar patrimônio */}
                 <ThemedButton style={styles.button} onPress={handleSubmit(onSubmit)}>
                     <ThemedText style={styles.buttonText}>{finalButtonText}</ThemedText>
                 </ThemedButton>
@@ -333,23 +272,10 @@ export default function manegePat() {
     );
 }
 
-/**
- * Estilos da página.
- */
 const styles = StyleSheet.create({
-    safeArea: {
-        flex: 1,
-    },
     container: {
         flex: 1,
         padding: 24,
-    },
-    title: {
-        paddingTop: 60,
-        marginBottom: 24,
-        textAlign: 'center',
-        fontSize: 24,
-        fontWeight: 'bold',
     },
     imageButton: {
         padding: 10,
@@ -367,6 +293,7 @@ const styles = StyleSheet.create({
     },
     image: {
         margin: 10,
+        borderRadius: 8,
     },
     button: {
         paddingVertical: 14,
@@ -375,6 +302,15 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    deleteButton: {
+        paddingVertical: 14,
+        paddingHorizontal: 24,
+        margin: 10,
+        borderRadius: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#dc3545' // Cor vermelha para indicar perigo
     },
     buttonText: {
         fontSize: 16,

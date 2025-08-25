@@ -119,14 +119,11 @@ export default function listing() {
   };
 
   const editPat = () => {
-    console.log("OG URL: ", patrimonioList[0].image.url);
     router.push({
       pathname: "/managePat",
       params: {
         mode: "edit",
-        patrimonioParam: JSON.stringify(patrimonioList[0]),
-        imageUrl: encodeURIComponent(patrimonioList[0].image.url),
-        patrimonioId: JSON.stringify(docId),
+        patrimonioId: docId, // Enviamos apenas o ID, que já é uma string.
       },
     });
     setEditado(true);
