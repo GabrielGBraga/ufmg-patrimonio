@@ -31,8 +31,6 @@ export function TextInputGroup({ inputs, control, errors }: TextInputGroupProps)
     const patNum = inputs[0].inputValue === patrimonio.patNum; // Verifica se o patNum está preenchido
     const atmNum = inputs[1].inputValue === patrimonio.atmNum; // Verifica se o atmNum está preenchido
 
-    console.log(patNum, atmNum);
-
     return (
         <ThemedView style={styles.container}>
             {inputs.map((input, index) => (

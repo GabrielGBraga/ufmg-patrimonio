@@ -14,6 +14,15 @@
     ],
     "name": "Patrimonio UFMG",
     "slug": "patrimonio-ufmg",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "37c52e42-ed0b-40d0-81c4-3aa36749fc50"
+      }
+    },
+    "android": {
+      "package": "com.gabrielgbraga.patrimonioufmg"
+    }
   }
 }

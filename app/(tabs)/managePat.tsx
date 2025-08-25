@@ -63,10 +63,11 @@ export default function manegePat() {
      */
     useEffect(() => {
         if (isAddingPatrimonio) {
+            console.log("before addPatrimonio");
             addPatrimonio();
             setIsAddingPatrimonio(false);
         }
-    }, [formData.image?.url]);
+    }, [isAddingPatrimonio]);
 
     /**
      * Manipula a alteração nos checkboxes, alternando o estado selecionado.
@@ -82,6 +83,7 @@ export default function manegePat() {
      * Adiciona um novo patrimônio no Firestore após validar os dados.
      */
     const addPatrimonio = async () => {
+        console.log("addPatrimonio");
         try {
             if (user) {
                 console.log("Adding patrimonio");
@@ -200,8 +202,6 @@ export default function manegePat() {
 
             setLoading(true);
 
-            setIsAddingPatrimonio(true);
-
             try {
                 if(imageCancel && mode === "edit"){
                     await deleteImage(formData.image.url);
@@ -215,10 +215,12 @@ export default function manegePat() {
                             url: imageUrl,
                         },
                     }));
+                    setIsAddingPatrimonio(true);
                 } else {
                     console.log('Erro ao fazer upload da imagem');
                     Alert.alert('Erro', 'Não foi possível fazer o upload da imagem.');
                 }
+                console.log("Image uploaded and formData updated");
             } catch (error) {
                 console.error('Erro no upload da imagem:', error);
                 Alert.alert('Erro', 'Ocorreu um erro durante o upload da imagem. Por favor, tente novamente.');
@@ -232,6 +234,9 @@ export default function manegePat() {
     const { control, handleSubmit, formState: { errors } } = useForm();
 
     const onSubmit = async (data: any) => {
+
+        console.log('onSubmit');
+
         if (Object.keys(errors).length > 0) {
             Alert.alert('Erro', 'Por favor, corrija os erros antes de enviar.');
             return;
@@ -247,8 +252,6 @@ export default function manegePat() {
             return;
         }
 
-        console.log("onsubmit");
-
         try {
 
             const lastEditedBy = user.email;
@@ -262,8 +265,10 @@ export default function manegePat() {
 
             if (formData.conservacao !== '') {
                 if (mode === "edit" && !imageCancel) {
+                    console.log("Editing without changing image");
                     setIsAddingPatrimonio(true);
                 } else {
+                    console.log("Uploading new image");
                     await handleUploadImage();
                 }
             } else {

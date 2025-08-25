@@ -110,7 +110,7 @@ export default function listing() {
   };
 
   const editPat = () => {
-    console.log("OG Image URL: ", patrimonioList[0].image.url);
+    console.log("goinf on edit");
     router.push({
       pathname: "/managePat",
       params: {
@@ -132,10 +132,10 @@ export default function listing() {
     <View style={styles.renderContainer}>
       <ThemedView style={styles.patrimonioContainer}>
         <View style={styles.row}>
-          <Image
+          {item.image.url !== "" && (<Image
             source={{ uri: item.image.url }}
             style={{ height: item.image.height, width: item.image.width }}
-          />
+          />)}
         </View>
         {Object.keys(patrimonio).map((key) =>
           key !== "image" && key !== "lastEditedBy" && key !== "lastEditedAt" ? (
