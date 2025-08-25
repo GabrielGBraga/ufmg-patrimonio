@@ -85,20 +85,29 @@ export default function listing() {
     if (user && patNum !== "") {
       try {
         const q = query(patrimonioCollection, where("patNum", "==", patNum));
-        const data = await getDocs(q);
-        if (data.empty) {
-          Alert.alert("Nenhum patrimônio encontrado.");
-          return;
+        let search = await getDocs(q);
+        if (search.empty) {
+          const q = query(patrimonioCollection, where("atmNum", "==", patNum));
+          search = await getDocs(q);
+          if (search.empty) {
+            Alert.alert("Patrimônio não encontrado.");
+          }
         }
-        data.forEach((doc) => {
-          setDocId(doc.id);
-        });
-        setPatrimonioList(
-          data.docs.map((doc) => ({
-            ...(doc.data() as Patrimonio), // Cast to your expected type
-          }))
-        );
-        setPatNum("");
+
+        if(!search.empty) {
+          const data = search;
+
+          data.forEach((doc) => {
+            setDocId(doc.id);
+          });
+          setPatrimonioList(
+            data.docs.map((doc) => ({
+              ...(doc.data() as Patrimonio), // Cast to your expected type
+            }))
+          );
+          setPatNum("");
+        }
+
       } catch (error) {
         console.error("Erro ao buscar patrimônios: ", error);
       }
@@ -110,7 +119,7 @@ export default function listing() {
   };
 
   const editPat = () => {
-    console.log("goinf on edit");
+    console.log("OG URL: ", patrimonioList[0].image.url);
     router.push({
       pathname: "/managePat",
       params: {
