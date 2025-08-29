@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, Dimensions, TouchableOpacity } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import * as ScreenOrientation from 'expo-screen-orientation';
 
 const { width, height} = Dimensions.get('window');
 const overlayWidth = width * 0.5;
 const overlayHeight = height * 0.4;
+
+
 
 export default function CameraScreen({ onBarcodeScanned }) {
   const [permission, requestPermission] = useCameraPermissions();
@@ -15,6 +18,16 @@ export default function CameraScreen({ onBarcodeScanned }) {
       requestPermission();
     }
   }, [permission, requestPermission]);
+
+  const [orientation, setOrientation] = useState(null);
+
+  useEffect(() => {
+    async function getOrientation() {
+      const currentOrientation = await ScreenOrientation.getOrientationAsync();
+      setOrientation(currentOrientation);
+    }
+    getOrientation();
+  }, []);
 
   // A função agora recebe { type, data } diretamente, como esperado pela CameraView
   const handleBarCodeScanned = ({ type, data }) => {
