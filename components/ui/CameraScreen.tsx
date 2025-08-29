@@ -1,113 +1,147 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, Dimensions } from "react-native";
-import { CameraView, useCameraPermissions } from "expo-camera";
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, Text, View, Dimensions, TouchableOpacity } from 'react-native';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 
-const { width } = Dimensions.get("window");
-const FRAME_WIDTH = width * 0.5;
-const FRAME_HEIGHT = FRAME_WIDTH * 0.5;
-const CORNER_SIZE = 60;
-const BORDER_WIDTH = 15;
+const { width, height} = Dimensions.get('window');
+const overlayWidth = width * 0.5;
+const overlayHeight = height * 0.4;
 
-export function CameraScreen({ onBarcodeScanned }) {
+export default function CameraScreen({ onBarcodeScanned }) {
   const [permission, requestPermission] = useCameraPermissions();
-  const [scanned, setScanned] = useState(false);
+  const [isScanned, setIsScanned] = useState(false);
 
   useEffect(() => {
-    if (!permission || !permission.granted) {
+    if (!permission?.granted) {
       requestPermission();
     }
-  }, [permission]);
+  }, [permission, requestPermission]);
 
-  const handleScanned = ({ data, type }) => {
-    if (!scanned) {
-      setScanned(true);
-      onBarcodeScanned?.({ data, type });
-      setTimeout(() => setScanned(false), 2000);
+  // A função agora recebe { type, data } diretamente, como esperado pela CameraView
+  const handleBarCodeScanned = ({ type, data }) => {
+    setIsScanned(true);
+    if (onBarcodeScanned) {
+      onBarcodeScanned({ type, data });
     }
   };
 
-  if (!permission || !permission.granted) {
-    return <Text>Camera permission is required</Text>;
+  if (!permission) {
+    return <Text style={styles.permissionText}>Verificando permissão da câmera...</Text>;
+  }
+
+  if (!permission.granted) {
+    return (
+      <View style={styles.permissionContainer}>
+        <Text style={styles.permissionText}>
+          Sem acesso à câmera. Por favor, permita o acesso nas configurações do seu dispositivo.
+        </Text>
+        <TouchableOpacity onPress={requestPermission} style={styles.permissionButton}>
+          <Text style={styles.permissionButtonText}>Conceder Permissão</Text>
+        </TouchableOpacity>
+      </View>
+    );
   }
 
   return (
     <View style={styles.container}>
       <CameraView
-        style={StyleSheet.absoluteFill}
-        onBarcodeScanned={handleScanned}
+        style={StyleSheet.absoluteFillObject}
+        onBarcodeScanned={isScanned ? undefined : handleBarCodeScanned}
         barcodeScannerSettings={{
-          barcodeTypes: [
-            "qr",
-            "code128",
-            "code39",
-            "ean13",
-            "ean8",
-            "upc_a",
-            "upc_e",
-          ],
+          barcodeTypes: ["qr", "ean13", "ean8", "upc_a", "upc_e", "code39", "code93", "code128"],
         }}
       />
 
-      {/* Overlay */}
       <View style={styles.overlay}>
-        <View style={styles.scanArea}>
-          {/* Corner lines */}
-          <View style={[styles.corner, styles.topLeft]} />
-          <View style={[styles.corner, styles.topRight]} />
-          <View style={[styles.corner, styles.bottomLeft]} />
-          <View style={[styles.corner, styles.bottomRight]} />
+        <View style={styles.unfocusedContainer}>
+          <View style={styles.unfocused} />
+          <View style={styles.middleContainer}>
+            <View style={styles.unfocused} />
+            <View style={styles.focused} />
+            <View style={styles.unfocused} />
+          </View>
+          <View style={styles.unfocused} />
         </View>
+        <Text style={styles.overlayText}>Posicione o código de barras no centro da área</Text>
       </View>
+
+      {isScanned && (
+        <TouchableOpacity style={styles.scanAgainButton} onPress={() => setIsScanned(false)}>
+          <Text style={styles.scanAgainText}>Escanear Novamente</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  permissionContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  permissionText: {
+    textAlign: 'center',
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 10,
+  },
+  permissionButton: {
+    backgroundColor: 'rgba(0, 122, 255, 0.8)',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 25,
+  },
+  permissionButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    alignItems: "center",
-    justifyContent: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  scanArea: {
-    width: FRAME_WIDTH,
-    height: FRAME_HEIGHT,
-    position: "relative",
+  unfocusedContainer: {
+    ...StyleSheet.absoluteFillObject,
   },
-  corner: {
-    width: CORNER_SIZE,
-    height: CORNER_SIZE,
-    position: "absolute",
-    borderColor: "#FFFFFF",
+  unfocused: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
   },
-  topLeft: {
-    top: 0,
-    left: 0,
-    borderTopWidth: BORDER_WIDTH,
-    borderLeftWidth: BORDER_WIDTH,
+  middleContainer: {
+    flexDirection: 'row',
   },
-  topRight: {
-    top: 0,
-    right: 0,
-    borderTopWidth: BORDER_WIDTH,
-    borderRightWidth: BORDER_WIDTH,
+  focused: {
+    width: overlayWidth,
+    height: overlayHeight,
+    borderWidth: 2,
+    borderColor: '#fff',
+    backgroundColor: 'transparent',
+    borderRadius: 10,
   },
-  bottomLeft: {
-    bottom: 0,
-    left: 0,
-    borderBottomWidth: BORDER_WIDTH,
-    borderLeftWidth: BORDER_WIDTH,
-  },
-  bottomRight: {
-    bottom: 0,
-    right: 0,
-    borderBottomWidth: BORDER_WIDTH,
-    borderRightWidth: BORDER_WIDTH,
-  },
-  instruction: {
-    color: "#fff",
-    marginTop: 24,
+  overlayText: {
+    color: '#fff',
+    marginTop: 20,
     fontSize: 16,
-    fontWeight: "bold",
+    textAlign: 'center',
+  },
+  scanAgainButton: {
+    position: 'absolute',
+    bottom: 50,
+    backgroundColor: 'rgba(0, 122, 255, 0.8)',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 25,
+  },
+  scanAgainText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });

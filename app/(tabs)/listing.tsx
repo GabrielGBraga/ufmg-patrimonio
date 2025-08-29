@@ -26,7 +26,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { ThemedHeader } from "@/components/ui/ThemedHeader";
 import { router } from "expo-router";
 import { useIsFocused } from "@react-navigation/native";
-import { CameraScreen } from "@/components/ui/CameraScreen";
+import CameraScreen from "@/components/ui/CameraScreen";
 import { ScrollableAreaView } from "@/components/layout/ScrollableAreaView";
 
 /**
