@@ -1,7 +1,7 @@
 import {ActivityIndicator, Alert, Image, SafeAreaView, StyleSheet} from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { db } from '@/FirebaseConfig';
-import { addDoc, collection, deleteDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { ThemedView } from "@/components/ui/ThemedView";
@@ -75,6 +75,29 @@ export default function manegePat() {
         setImage(null);
         setImageCancel(true);
     };
+
+    const checkExistingPat = async (patNum: string, atmNum: string) => {
+        if (!user) return false;
+
+        try {
+            const q = query(collection(db, "patrimonios"), where("patNum", "==", patNum));
+            let search = await getDocs(q);
+            if (search.empty) {
+                const q = query(collection(db, "patrimonios"), where("atmNum", "==", patNum));
+                search = await getDocs(q);
+                if (search.empty) {
+                    return false;
+                }else{
+                    return true;
+                }
+            } else{
+                return true;
+            }
+        } catch (error) {
+            console.error("Erro ao buscar patrimônios: ", error);
+            return false;
+        }
+    }
 
     const inputs = formData ? [
         { label: 'Número de Patrimônio', placeholder: 'Digite o número de patrimônio', key: 'patNum' },
@@ -164,6 +187,9 @@ export default function manegePat() {
         }
         if (!formData.conservacao) {
             return Alert.alert('Erro', 'Selecione uma opção de conservação.');
+        }
+        if (await checkExistingPat(formData.patNum, formData.atmNum) && mode === 'add') {
+            return Alert.alert('Erro', 'Número de patrimônio ou ATM já existe.');
         }
 
         setLoading(true);
