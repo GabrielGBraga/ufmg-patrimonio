@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, Dimensions, TouchableOpacity } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import * as ScreenOrientation from 'expo-screen-orientation';
-
-const { width, height} = Dimensions.get('window');
-const overlayWidth = width * 0.5;
-const overlayHeight = height * 0.4;
-
-
 
 export default function CameraScreen({ onBarcodeScanned }) {
   const [permission, requestPermission] = useCameraPermissions();
   const [isScanned, setIsScanned] = useState(false);
+  const [screenDimensions, setScreenDimensions] = useState(Dimensions.get('window'));
+
+  useEffect(() => {
+    const subscription = Dimensions.addEventListener('change', ({ window }) => {
+      setScreenDimensions(window);
+    });
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     if (!permission?.granted) {
@@ -19,22 +20,24 @@ export default function CameraScreen({ onBarcodeScanned }) {
     }
   }, [permission, requestPermission]);
 
-  const [orientation, setOrientation] = useState(null);
-
-  useEffect(() => {
-    async function getOrientation() {
-      const currentOrientation = await ScreenOrientation.getOrientationAsync();
-      setOrientation(currentOrientation);
-    }
-    getOrientation();
-  }, []);
-
-  // A função agora recebe { type, data } diretamente, como esperado pela CameraView
   const handleBarCodeScanned = ({ type, data }) => {
     setIsScanned(true);
     if (onBarcodeScanned) {
       onBarcodeScanned({ type, data });
     }
+  };
+  
+  const isPortrait = screenDimensions.height > screenDimensions.width;
+  const overlayWidth = isPortrait ? screenDimensions.width * 0.7 : screenDimensions.width * 0.4;
+  const overlayHeight = isPortrait ? screenDimensions.height * 0.2 : screenDimensions.height * 0.6;
+
+  const focusedStyle = {
+    width: overlayWidth,
+    height: overlayHeight,
+    borderWidth: 5,
+    borderColor: '#fff',
+    backgroundColor: 'transparent',
+    borderRadius: 10,
   };
 
   if (!permission) {
@@ -65,18 +68,13 @@ export default function CameraScreen({ onBarcodeScanned }) {
       />
 
       <View style={styles.overlay}>
-        <View style={styles.unfocusedContainer}>
-          <View style={styles.unfocused} />
-          <View style={styles.middleContainer}>
-            <View style={styles.unfocused} />
-            <View style={styles.focused} />
-            <View style={styles.unfocused} />
-          </View>
-          <View style={styles.unfocused} />
+        <View style={{flexDirection: 'row', justifyContent: 'center'}}>
+          <View style={focusedStyle} />
         </View>
-        <Text style={styles.overlayText}>Posicione o código de barras no centro da área</Text>
       </View>
 
+      <Text style={styles.overlayText}>Posicione o código de barras no centro da área</Text>
+      
       {isScanned && (
         <TouchableOpacity style={styles.scanAgainButton} onPress={() => setIsScanned(false)}>
           <Text style={styles.scanAgainText}>Escanear Novamente</Text>
@@ -118,31 +116,20 @@ const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
-    alignItems: 'center',
-  },
-  unfocusedContainer: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  unfocused: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    // Removido justifyContent e alignItems para permitir a estrutura de flexbox
   },
   middleContainer: {
+    // A altura é definida pelo 'focusedStyle' e a largura é flexível
     flexDirection: 'row',
   },
-  focused: {
-    width: overlayWidth,
-    height: overlayHeight,
-    borderWidth: 2,
-    borderColor: '#fff',
-    backgroundColor: 'transparent',
-    borderRadius: 10,
-  },
   overlayText: {
+    position: 'absolute',
+    bottom: '25%',
     color: '#fff',
-    marginTop: 20,
     fontSize: 16,
     textAlign: 'center',
+    paddingHorizontal: 20,
+    alignSelf: 'center', // Garante que o texto fique centralizado
   },
   scanAgainButton: {
     position: 'absolute',
