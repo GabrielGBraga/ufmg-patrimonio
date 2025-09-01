@@ -35,6 +35,9 @@ export default function manegePat() {
     const [imageCancel, setImageCancel] = useState(false);
     const [scanBool, setScanBool] = useState(false);
 
+    const { control, handleSubmit, formState: { errors }, setValue } = useForm();
+
+
     useEffect(() => {
         if (mode === 'edit' && docId) {
             const fetchPatrimonioData = async () => {
@@ -176,8 +179,6 @@ export default function manegePat() {
         }
     };
 
-    const { control, handleSubmit, formState: { errors } } = useForm();
-
     // ✅ **LÓGICA DE SUBMISSÃO REATORADA**
     // Esta função agora controla todo o fluxo de salvar os dados.
     const onSubmit = async () => {
@@ -259,12 +260,8 @@ export default function manegePat() {
                 <ThemedHeader title="Escanear Patrimônio" arrowBack={() => setScanBool(false)} />
                 <CameraScreen
                     onBarcodeScanned={({ data }) => {
-                        setFormData((prevState) => {
-                            if (!prevState) return null;
-                            return{
-                                ...prevState, 
-                                patNum: data 
-                        }});
+                        setValue('Número de Patrimônio', data);
+                        setFormData(prevState => prevState ? { ...prevState, patNum: data } : null);
                         setScanBool(false);
                     }}
                 />
