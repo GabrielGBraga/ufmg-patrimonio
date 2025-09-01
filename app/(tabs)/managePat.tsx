@@ -14,6 +14,7 @@ import { patrimonio, Patrimonio } from "@/constants/Patrimonio";
 import { ThemedHeader } from '@/components/ui/ThemedHeader';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useForm } from 'react-hook-form';
+import CameraScreen from '@/components/ui/CameraScreen';
 
 export default function manegePat() {
     
@@ -32,6 +33,7 @@ export default function manegePat() {
     const [boolAtm, setBoolAtm] = useState(false);
     const [loading, setLoading] = useState(mode === 'edit');
     const [imageCancel, setImageCancel] = useState(false);
+    const [scanBool, setScanBool] = useState(false);
 
     useEffect(() => {
         if (mode === 'edit' && docId) {
@@ -251,6 +253,25 @@ export default function manegePat() {
     
     if (!formData) return null;
 
+    if (scanBool) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <ThemedHeader title="Escanear Patrimônio" arrowBack={() => setScanBool(false)} />
+                <CameraScreen
+                    onBarcodeScanned={({ data }) => {
+                        setFormData((prevState) => {
+                            if (!prevState) return null;
+                            return{
+                                ...prevState, 
+                                patNum: data 
+                        }});
+                        setScanBool(false);
+                    }}
+                />
+            </SafeAreaView>
+        );
+    }
+
     return (
         <ThemedView style={styles.container}>
             <ScrollableAreaView>
@@ -280,6 +301,10 @@ export default function manegePat() {
                     </ThemedView>
                 )}
                 
+                <ThemedButton onPress={() => setScanBool(true)}>
+                    <ThemedText>Escanear Código de Barras</ThemedText>
+                </ThemedButton>
+
                 <TextInputGroup inputs={inputs} control={control} errors={errors} />
                 <CheckboxGroup selectedCheckbox={formData.conservacao} onCheckboxChange={handleCheckboxChange} />
 
