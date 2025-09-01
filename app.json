@@ -15,6 +15,7 @@
     "name": "Patrimonio UFMG",
     "slug": "patrimonio-ufmg",
     "version": "1.0.0",
+    "icon": "./assets/images/icon.png",
     "extra": {
       "router": {},
       "eas": {
