@@ -9,7 +9,7 @@ export const Colors = {
     text: '#333333',
     secondaryText: '#666666',
     accent: '#007BFF',
-    buttonBackground: '#007BFF',
+    buttonBackground: '#429cfcff',
     buttonText: '#FFFFFF',
     inputBackground: '#FFFFFF',
     inputBorder: '#CCCCCC',

@@ -105,8 +105,9 @@ const styles = StyleSheet.create({
     },
     textInput: {
         height: 48, // Altura do campo de entrada
+        borderColor: 'transparent', // Cor da borda do campo de entrada
         borderWidth: 1, // Espessura da borda do campo de entrada
-        borderRadius: 8, // Bordas arredondadas
+        borderRadius:8, // Bordas arredondadas
         paddingHorizontal: 12, // Espaçamento interno horizontal
         marginTop: 8, // Espaçamento entre o rótulo e o campo de entrada
     },

@@ -299,7 +299,7 @@ export default function manegePat() {
                 )}
                 
                 <ThemedButton onPress={() => setScanBool(true)}>
-                    <ThemedText>Escanear Código de Barras</ThemedText>
+                    <ThemedText style={styles.buttonText}>Escanear Código de Barras</ThemedText>
                 </ThemedButton>
 
                 <TextInputGroup inputs={inputs} control={control} errors={errors} />
