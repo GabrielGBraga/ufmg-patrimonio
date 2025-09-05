@@ -15,7 +15,7 @@ import { ThemedText } from "@/components/ui/ThemedText";
 import { ThemedTextInput } from "@/components/ui/ThemedTextInput";
 import { ThemedView } from "@/components/ui/ThemedView";
 import { ThemedButton } from "@/components/ui/ThemedButton";
-import { patrimonio, Patrimonio } from "@/constants/Patrimonio";
+import { labelPatrimonio, patrimonio, Patrimonio } from "@/constants/Patrimonio";
 import {
   CameraView,
   CameraType,
@@ -129,40 +129,60 @@ export default function listing() {
     setEditado(true);
   };
 
-  /**
-   * Renderiza um item individual de patrimônio na lista.
-   * Mapeia dinamicamente as propriedades de um patrimônio.
+/**
+   * Renderiza um item individual de patrimônio.
+   * Cada par de rótulo-dado é uma linha com alinhamento vertical e horizontal garantido.
    * @param item - Dados do patrimônio a serem renderizados
    */
   const renderItem = ({ item }) => (
     <View style={styles.renderContainer}>
       <ThemedView style={styles.patrimonioContainer}>
-        <View style={styles.row}>
-          {item.image.url !== "" && (<Image
-            source={{ uri: item.image.url }}
-            style={{ height: item.image.height, width: item.image.width }}
-          />)}
-        </View>
+        {/* Container para a imagem, se existir */}
+        {item.image.url !== "" && (
+          <View style={styles.imageContainer}>
+            <Image
+              source={{ uri: item.image.url }}
+              style={{
+                height: item.image.height,
+                width: item.image.width,
+                resizeMode: 'contain',
+              }}
+            />
+          </View>
+        )}
+        
+        {/* Renderiza cada detalhe como uma linha separada */}
         {Object.keys(patrimonio).map((key) =>
           key !== "image" && key !== "lastEditedBy" && key !== "lastEditedAt" ? (
-            <View style={styles.row} key={key}>
-              <ThemedText style={styles.label}>
-                {key.charAt(0).toUpperCase() + key.slice(1)}:{" "}
-              </ThemedText>
-              <ThemedText style={styles.data}> {item[key]} </ThemedText>
+            <View style={styles.detailRow} key={key}>
+              <View style={styles.labelContainer}>
+                <ThemedText style={styles.label}>
+                  {labelPatrimonio[key]}:
+                </ThemedText>
+              </View>
+              <View style={styles.dataContainer}>
+                <ThemedText style={styles.data}>{item[key]}</ThemedText>
+              </View>
             </View>
           ) : null
         )}
-        <View style={styles.row}>
-          <ThemedText style={styles.label}>Última Edição:</ThemedText>
-          <ThemedText style={styles.data}>{item.lastEditedBy} - {item.lastEditedAt}</ThemedText>
-          <Ionicons
-            name="pencil"
-            size={25}
-            onPress={() => editPat()}
-            color="black"
-          />
+
+        {/* Linha para a última edição */}
+        <View style={styles.detailRow}>
+            <View style={styles.labelContainer}>
+                <ThemedText style={styles.label}>Última Edição:</ThemedText>
+            </View>
+            <View style={styles.dataContainer}>
+                <ThemedText style={styles.data}>{item.lastEditedBy} - {item.lastEditedAt}</ThemedText>
+            </View>
         </View>
+
+        {/* Ícone de edição */}
+        <TouchableOpacity style={styles.editButton} onPress={() => editPat()}>
+            <Ionicons name="pencil" size={25} color="black" />
+            <ThemedText style={{marginLeft: 8}}>Editar</ThemedText>
+        </TouchableOpacity>
+
       </ThemedView>
     </View>
   );
@@ -268,27 +288,54 @@ const styles = StyleSheet.create({
     marginTop: 20,
     width: "100%",
   },
-  // Estilo do contêiner de cada patrimônio
   patrimonioContainer: {
-    flex: 1,
-    width: "80%",
-    alignItems: "center",
+    width: "90%",
     backgroundColor: "#7d7d7d",
     padding: 15,
     borderRadius: 10,
     marginBottom: 15,
     elevation: 3,
   },
-  // Estilo das labels nos detalhes do patrimônio
+  imageContainer: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  // (NOVO) Estilo para cada linha de detalhe (Rótulo + Dado)
+  detailRow: {
+    flexDirection: 'row',
+    marginBottom: 10, // Espaço entre as linhas de detalhes
+    width: '100%',
+    alignItems: 'flex-start', // << PONTO CHAVE DA CORREÇÃO!
+  },
+  // (NOVO) Container para o texto do rótulo
+  labelContainer: {
+    width: '35%', // Define uma largura fixa para a coluna de rótulos
+    paddingRight: 10, // Um respiro entre o rótulo e o dado
+  },
+  // (NOVO) Container para o texto do dado
+  dataContainer: {
+    width: '65%', // Define uma largura fixa para a coluna de dados
+  },
+  // Estilo das labels (AJUSTADO)
   label: {
     fontSize: 16,
     fontWeight: "bold",
-    flex: 1,
   },
-  // Estilo dos textos dos dados do patrimônio
+  // Estilo dos dados (AJUSTADO)
   data: {
     fontSize: 16,
-    flex: 2,
+  },
+
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 15,
+    padding: 10,
+    backgroundColor: '#c7c7c7',
+    borderRadius: 8,
+    width: '100%',
   },
   renderContainer: {
     flex: 1,
