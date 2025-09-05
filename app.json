@@ -16,6 +16,7 @@
     "slug": "patrimonio-ufmg",
     "version": "1.0.0",
     "icon": "./assets/images/icon.png",
+    "userInterfaceStyle": "automatic",
     "extra": {
       "router": {},
       "eas": {
@@ -23,6 +24,7 @@
       }
     },
     "android": {
+      "userInterfaceStyle": "automatic",
       "package": "com.gabrielgbraga.patrimonioufmg",
       "permissions": [
         "android.permission.CAMERA",
@@ -37,6 +39,8 @@
     "updates": {
       "url": "https://u.expo.dev/37c52e42-ed0b-40d0-81c4-3aa36749fc50"
     },
-    "ios": {}
+    "ios": {
+      "userInterfaceStyle": "automatic"
+    }
   }
 }
