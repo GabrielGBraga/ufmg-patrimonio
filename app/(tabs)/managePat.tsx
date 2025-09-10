@@ -87,10 +87,10 @@ export default function manegePat() {
         try {
             const q = query(collection(db, "patrimonios"), where("patNum", "==", patNum));
             let search = await getDocs(q);
-            if (search.empty) {
-                const q = query(collection(db, "patrimonios"), where("atmNum", "==", patNum));
+            if (search.empty || patNum === '') {
+                const q = query(collection(db, "patrimonios"), where("atmNum", "==", atmNum));
                 search = await getDocs(q);
-                if (search.empty) {
+                if (search.empty || atmNum === '') {
                     return false;
                 }else{
                     return true;
