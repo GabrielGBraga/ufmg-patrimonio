@@ -8,9 +8,9 @@ import { ThemedCheckbox } from "@/components/ui/ThemedCheckbox";
 export function CheckboxGroup ({ selectedCheckbox, onCheckboxChange }) {
 
     const options = [
-        { label: "Bom", value: "bom" },
-        { label: "Ocioso", value: "ocioso" },
-        { label: "Irrecuperável", value: "irrecuperavel" },
+        { label: "Bom", value: "Bom" },
+        { label: "Ocioso", value: "Ocioso" },
+        { label: "Irrecuperável", value: "Irrecuperável" },
     ];
 
     return (
