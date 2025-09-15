@@ -15,6 +15,7 @@ import { ThemedHeader } from '@/components/ui/ThemedHeader';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useForm } from 'react-hook-form';
 import CameraScreen from '@/components/ui/CameraScreen';
+import { formatAtmNum, formatPatNum } from '@/hooks/formating';
 
 export default function manegePat() {
     
@@ -37,6 +38,12 @@ export default function manegePat() {
 
     const { control, handleSubmit, formState: { errors }, setValue } = useForm();
 
+    useEffect(() => {
+        if(formData?.atmNum != ''){
+            setBoolAtm(true)
+        }
+    }, [formData?.atmNum])
+    
 
     useEffect(() => {
         if (mode === 'edit' && docId) {
@@ -195,12 +202,26 @@ export default function manegePat() {
             return Alert.alert('Erro', 'Número de patrimônio ou ATM já existe.');
         }
 
+        let patFormat = formatPatNum(formData.patNum);
+
+        if (patFormat == '' && formData.patNum != '') {
+            return Alert.alert('Erro', 'O número de patrimônio inserido é inválido.');
+        }
+
+        let atmFormat = formatAtmNum(formData.atmNum);
+
+        if (atmFormat == '' && formData.atmNum != '') {
+            return Alert.alert('Erro', 'O número ATM inserido é inválido.');
+        }
+
         setLoading(true);
 
         try {
             // Clona os dados atuais para evitar mutações diretas no estado.
             let dataToSave: Patrimonio = {
                 ...formData,
+                patNum: patFormat,
+                atmNum: atmFormat,
                 lastEditedBy: user.email || 'N/A',
                 lastEditedAt: new Date().toLocaleDateString('pt-BR'),
             };

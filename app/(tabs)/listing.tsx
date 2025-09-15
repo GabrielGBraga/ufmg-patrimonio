@@ -28,6 +28,7 @@ import { router } from "expo-router";
 import { useIsFocused } from "@react-navigation/native";
 import CameraScreen from "@/components/ui/CameraScreen";
 import { ScrollableAreaView } from "@/components/layout/ScrollableAreaView";
+import { formatAtmNum, formatInputForSearch, formatPatNum } from "@/hooks/formating";
 
 /**
  * Este componente renderiza uma tela para pesquisar e exibir patrimônios pelo número.
@@ -69,6 +70,12 @@ export default function listing() {
     })();
   }, []);
 
+  // useEffect(() => {
+  //   if(patNum.length >= 10){
+  //     setPatNum(formatInputForSearch(patNum));
+  //   }
+  // }, [patNum]);
+
   if (hasPermission === null) {
     return <ThemedText>Requesting camera permissions...</ThemedText>;
   }
@@ -84,10 +91,10 @@ export default function listing() {
   const fetchPatrimonio = async () => {
     if (user && patNum !== "") {
       try {
-        const q = query(patrimonioCollection, where("patNum", "==", patNum));
+        const q = query(patrimonioCollection, where("patNum", "==", formatPatNum(patNum)));
         let search = await getDocs(q);
         if (search.empty) {
-          const q = query(patrimonioCollection, where("atmNum", "==", patNum));
+          const q = query(patrimonioCollection, where("atmNum", "==", formatAtmNum(patNum)));
           search = await getDocs(q);
           if (search.empty) {
             Alert.alert("Patrimônio não encontrado.");
