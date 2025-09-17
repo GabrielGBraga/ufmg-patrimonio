@@ -1,4 +1,5 @@
-import {ActivityIndicator, Alert, Image, SafeAreaView, StyleSheet} from 'react-native';
+import {ActivityIndicator, Alert, Image, StyleSheet} from 'react-native';
+import { SafeAreaView } from "react-native-safe-area-context";
 import React, { useEffect, useState } from 'react';
 import { db } from '@/FirebaseConfig';
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';

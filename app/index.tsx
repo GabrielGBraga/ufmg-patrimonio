@@ -1,4 +1,5 @@
-import {StyleSheet, SafeAreaView, Alert} from 'react-native';
+import {StyleSheet, Alert} from 'react-native';
+import { SafeAreaView } from "react-native-safe-area-context";
 import React, {useEffect, useState} from 'react';
 import { auth } from '@/FirebaseConfig';
 import { signInWithEmailAndPassword } from 'firebase/auth';

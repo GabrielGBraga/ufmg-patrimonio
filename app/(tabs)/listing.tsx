@@ -2,11 +2,11 @@ import {
   StyleSheet,
   FlatList,
   Image,
-  SafeAreaView,
   View,
   Alert,
   TouchableOpacity,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import React, { use, useEffect, useState } from "react";
 import { db } from "@/FirebaseConfig";
 import { collection, getDocs, query, where } from "firebase/firestore";
