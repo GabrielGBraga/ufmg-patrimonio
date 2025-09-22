@@ -1,5 +1,4 @@
-import {ActivityIndicator, Alert, Image, StyleSheet} from 'react-native';
-import { SafeAreaView } from "react-native-safe-area-context";
+import {ActivityIndicator, Alert, Image, StyleSheet, View} from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { db } from '@/FirebaseConfig';
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
@@ -278,7 +277,7 @@ export default function manegePat() {
 
     if (scanBool) {
         return (
-            <SafeAreaView style={styles.container}>
+            <View style={styles.container}>
                 <ThemedHeader title="Escanear Patrimônio" arrowBack={() => setScanBool(false)} />
                 <CameraScreen
                     onBarcodeScanned={({ data }) => {
@@ -287,7 +286,7 @@ export default function manegePat() {
                         setScanBool(false);
                     }}
                 />
-            </SafeAreaView>
+            </View>
         );
     }
 

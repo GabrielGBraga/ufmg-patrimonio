@@ -28,8 +28,6 @@
       "package": "com.gabrielgbraga.patrimonioufmg",
       "permissions": [
         "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO",
-        "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO"
       ]
     },
@@ -40,7 +38,11 @@
       "url": "https://u.expo.dev/37c52e42-ed0b-40d0-81c4-3aa36749fc50"
     },
     "ios": {
-      "userInterfaceStyle": "automatic"
+      "userInterfaceStyle": "automatic",
+      "bundleIdentifier": "com.gabrielgbraga.patrimonioufmg",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     }
   }
 }
