@@ -10,8 +10,8 @@ import { ThemedTextInput } from "@/components/ui/ThemedTextInput";
 import { ThemedView } from '@/components/ui/ThemedView';
 
 export default function Index() {
-    const [email, setEmail] = useState('ggb-13@ufmg.br');
-    const [password, setPassword] = useState('Gd&lk73a');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
 
     const signIn = async () => {
@@ -22,7 +22,6 @@ export default function Index() {
                 setPassword('');
                 router.push('/(tabs)');
                 console.log("User logged in")
-
             }
         } catch (error: any) {
             console.error(error);
