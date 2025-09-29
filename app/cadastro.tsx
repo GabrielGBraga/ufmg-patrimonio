@@ -3,40 +3,47 @@ import { ThemedView } from "@/components/ui/ThemedView";
 import { ThemedText } from '@/components/ui/ThemedText';
 import { ThemedButton } from '@/components/ui/ThemedButton';
 import { ThemedTextInput } from "@/components/ui/ThemedTextInput";
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Alert } from 'react-native';
 import { router } from 'expo-router';
-import { auth } from '@/FirebaseConfig';
-import { db } from '@/FirebaseConfig';
-import { addDoc, collection } from 'firebase/firestore';
-import {createUserWithEmailAndPassword, signInWithEmailAndPassword} from 'firebase/auth';
+import { supabase } from '@/utils/supabase'; // <-- Import Supabase client
 
-export default function Cadastro ( loginEmail:string, loginSenha:string ) {
+export default function Cadastro () {
 
-    const [email, setEmail] = useState(loginEmail);
-    const [password, setPassword] = useState(loginSenha);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const [nome, setNome] = React.useState('');
-    const usuario = {
-        nome: nome,
-        email: email,
-        password: password,
-    }
-
-    const usuarios = collection(db, 'usuarios');
+    const [nome, setNome] = useState('');
 
     const handleCadastro = async () => {
         try {
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            if (userCredential.user) {
-                await addDoc(usuarios, usuario);
-                setEmail('')
-                setPassword('')
-                setNome('')
-                router.back();
+            const { data, error } = await supabase.auth.signUp({
+                email: email,
+                password: password,
+                options: {
+                    // Add extra data like 'nome' here
+                    data: {
+                        nome: nome,
+                    }
+                }
+            });
+
+            if (error) {
+                throw error;
             }
+
+            // On success, clear the fields and show a confirmation message
+            setEmail('');
+            setPassword('');
+            setNome('');
+            Alert.alert(
+                'Cadastro realizado!',
+                'Verifique seu e-mail para confirmar a conta.'
+            );
+            router.back();
+
         } catch (error: any) {
             console.log(error);
-            alert('Sign in failed: ' + error.message);
+            Alert.alert('Falha no cadastro', error.message);
         }
     };
 
@@ -57,6 +64,8 @@ export default function Cadastro ( loginEmail:string, loginSenha:string ) {
                 placeholder="Email"
                 value={email}
                 onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
             />
 
             <ThemedTextInput

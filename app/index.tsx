@@ -1,13 +1,12 @@
 import {StyleSheet, Alert} from 'react-native';
 import { SafeAreaView } from "react-native-safe-area-context";
-import React, {useEffect, useState} from 'react';
-import { auth } from '@/FirebaseConfig';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import React, {useState} from 'react';
 import { router } from 'expo-router';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { ThemedButton } from '@/components/ui/ThemedButton';
 import { ThemedTextInput } from "@/components/ui/ThemedTextInput";
 import { ThemedView } from '@/components/ui/ThemedView';
+import { supabase } from '../utils/supabase'; // <-- Import Supabase client
 
 export default function Index() {
     const [email, setEmail] = useState('');
@@ -16,16 +15,26 @@ export default function Index() {
 
     const signIn = async () => {
         try {
-            const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            if (userCredential.user) {
-                setEmail('');
-                setPassword('');
-                router.push('/(tabs)');
-                console.log("User logged in")
+            // Use Supabase auth method
+            const { error } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password,
+            });
+
+            if (error) {
+                // If there's an error, show it
+                throw error;
             }
+
+            // On success, clear fields and navigate
+            setEmail('');
+            setPassword('');
+            router.push('/(tabs)');
+            console.log("User logged in with Supabase");
+
         } catch (error: any) {
             console.error(error);
-            alert('Sign in failed: ' + error.message);
+            Alert.alert('Falha no login', error.message);
         }
     };
 
@@ -37,7 +46,7 @@ export default function Index() {
 
     return (
         <SafeAreaView style={styles.safeView}>
-            <ThemedView style={styles.container}>    
+            <ThemedView style={styles.container}>
                 <ThemedText type="title">Entrar</ThemedText>
                 <ThemedTextInput
                     style={styles.textInput}
@@ -45,6 +54,7 @@ export default function Index() {
                     value={email}
                     onChangeText={setEmail}
                     keyboardType="email-address"
+                    autoCapitalize="none"
                 />
                 <ThemedTextInput
                     style={styles.textInput}
