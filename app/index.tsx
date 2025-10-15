@@ -1,4 +1,4 @@
-import {StyleSheet, Alert} from 'react-native';
+import {StyleSheet, Alert, AppState} from 'react-native';
 import { SafeAreaView } from "react-native-safe-area-context";
 import React, {useState} from 'react';
 import { router } from 'expo-router';
@@ -6,37 +6,39 @@ import { ThemedText } from '@/components/ui/ThemedText';
 import { ThemedButton } from '@/components/ui/ThemedButton';
 import { ThemedTextInput } from "@/components/ui/ThemedTextInput";
 import { ThemedView } from '@/components/ui/ThemedView';
-import { supabase } from '../utils/supabase'; // <-- Import Supabase client
+import { supabase } from '../utils/supabase';
+
+AppState.addEventListener('change', (state) => {  
+    if (state === 'active') {    
+        supabase.auth.startAutoRefresh()  
+    } else {    
+        supabase.auth.stopAutoRefresh()  
+    }
+})
 
 export default function Index() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [loading, setLoading] = useState(false)
 
-    const signIn = async () => {
+    const signInWithEmail = async () => {    
+        setLoading(true)    
+
         try {
-            // Use Supabase auth method
-            const { error } = await supabase.auth.signInWithPassword({
-                email: email,
-                password: password,
-            });
-
-            if (error) {
-                // If there's an error, show it
-                throw error;
-            }
-
-            // On success, clear fields and navigate
-            setEmail('');
-            setPassword('');
-            router.push('/(tabs)');
-            console.log("User logged in with Supabase");
-
-        } catch (error: any) {
-            console.error(error);
-            Alert.alert('Falha no login', error.message);
+            const { error } = await supabase.auth.signInWithPassword({      
+                email: email,      
+                password: password,    
+            })
+            if (error) console.error("Error signing in: ", error.message )
+            else Alert.alert('Successfully signed in!')
+        } catch (error) {
+            Alert.alert('Error logging in')
+            console.error("Logging error: ", error);
         }
-    };
+        setLoading(false)
+        router.push('/(tabs)')
+    }
 
     const navigateToSignUp = () => {
         setEmail('');
@@ -65,7 +67,7 @@ export default function Index() {
                     iconName={showPassword ? "eye-off" : "eye"}
                     onIconPress={() => setShowPassword(!showPassword)}
                 />
-                <ThemedButton style={styles.button} onPress={signIn}>
+                <ThemedButton style={styles.button} onPress={() => signInWithEmail()}>
                     <ThemedText style={styles.text}>Entrar</ThemedText>
                 </ThemedButton>
                 <ThemedButton style={styles.button} onPress={navigateToSignUp}>

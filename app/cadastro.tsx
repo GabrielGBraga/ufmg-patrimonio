@@ -5,7 +5,7 @@ import { ThemedButton } from '@/components/ui/ThemedButton';
 import { ThemedTextInput } from "@/components/ui/ThemedTextInput";
 import { StyleSheet, Alert } from 'react-native';
 import { router } from 'expo-router';
-import { supabase } from '@/utils/supabase'; // <-- Import Supabase client
+import { supabase } from '@/utils/supabase';
 
 export default function Cadastro () {
 
@@ -13,39 +13,28 @@ export default function Cadastro () {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [nome, setNome] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handleCadastro = async () => {
-        try {
-            const { data, error } = await supabase.auth.signUp({
-                email: email,
-                password: password,
-                options: {
-                    // Add extra data like 'nome' here
-                    data: {
-                        nome: nome,
-                    }
-                }
-            });
+    const signUpWithEmail = async () =>{    
+        
+        setLoading(true)    
+        
+        const {      
+            data: { session },      
+            error,    
+        } = await supabase.auth.signUp({
+            email: email,      
+            password: password,    
+        })    
+        
+        if (error) Alert.alert(error.message)    
+        
+        if (!session) Alert.alert('Please check your inbox for email verification!')    
+        
+        setLoading(false)  
 
-            if (error) {
-                throw error;
-            }
-
-            // On success, clear the fields and show a confirmation message
-            setEmail('');
-            setPassword('');
-            setNome('');
-            Alert.alert(
-                'Cadastro realizado!',
-                'Verifique seu e-mail para confirmar a conta.'
-            );
-            router.back();
-
-        } catch (error: any) {
-            console.log(error);
-            Alert.alert('Falha no cadastro', error.message);
-        }
-    };
+        router.back();
+    }
 
     return (
         <ThemedView style={styles.container}>
@@ -78,7 +67,7 @@ export default function Cadastro () {
                 onIconPress={() => setShowPassword(!showPassword)}
             />
 
-            <ThemedButton style={styles.button} onPress={handleCadastro}>
+            <ThemedButton style={styles.button} onPress={signUpWithEmail}>
                 <ThemedText> Cadastrar </ThemedText>
             </ThemedButton>
 
