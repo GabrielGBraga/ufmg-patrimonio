@@ -8,8 +8,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import React, { use, useEffect, useState } from "react";
-import { db } from "@/FirebaseConfig";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { supabase } from '@/utils/supabase';
 import { getAuth, reload } from "firebase/auth";
 import { ThemedText } from "@/components/ui/ThemedText";
 import { ThemedTextInput } from "@/components/ui/ThemedTextInput";
@@ -52,7 +51,7 @@ export default function listing() {
 
   const auth = getAuth();
   const user = auth.currentUser;
-  const patrimonioCollection = collection(db, "patrimonios");
+  
 
   useEffect(() => {
     if (isFocused && editado) {
@@ -91,28 +90,30 @@ export default function listing() {
   const fetchPatrimonio = async () => {
     if (user && patNum !== "") {
       try {
-        const q = query(patrimonioCollection, where("patNum", "==", formatPatNum(patNum)));
-        let search = await getDocs(q);
-        if (search.empty) {
-          const q = query(patrimonioCollection, where("atmNum", "==", formatAtmNum(patNum)));
-          search = await getDocs(q);
-          if (search.empty) {
-            Alert.alert("Patrimônio não encontrado.");
+        // Try search by patNum first
+        let { data, error } = await supabase
+          .from('patrimonios')
+          .select('*')
+          .eq('patNum', formatPatNum(patNum));
+        if (error) throw error;
+        if (!data || data.length === 0) {
+          const res = await supabase
+            .from('patrimonios')
+            .select('*')
+            .eq('atmNum', formatAtmNum(patNum));
+          if (res.error) throw res.error;
+          data = res.data;
+          if (!data || data.length === 0) {
+            Alert.alert('Patrimônio não encontrado.');
+            return;
           }
         }
 
-        if(!search.empty) {
-          const data = search;
-
-          data.forEach((doc) => {
-            setDocId(doc.id);
-          });
-          setPatrimonioList(
-            data.docs.map((doc) => ({
-              ...(doc.data() as Patrimonio), // Cast to your expected type
-            }))
-          );
-          setPatNum("");
+        if (data && data.length > 0) {
+          // use first result's id for navigation/edit
+          setDocId((data[0] as any).id || '');
+          setPatrimonioList(data as Patrimonio[]);
+          setPatNum('');
         }
 
       } catch (error) {
@@ -243,7 +244,7 @@ export default function listing() {
         <FlatList
           data={patrimonioList}
           renderItem={renderItem}
-          keyExtractor={(item) => docId}
+          keyExtractor={(item) => (item as any).id}
           contentContainerStyle={styles.listContainer}
         />
       </ThemedView>

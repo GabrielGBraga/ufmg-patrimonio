@@ -1,7 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import {Alert} from "react-native";
-import {getDownloadURL, ref, StorageReference, uploadBytes, deleteObject} from "firebase/storage";
-import {storage} from "@/FirebaseConfig";
+import { supabase } from '@/utils/supabase';
 
 type imageData = {
     uri: string;
@@ -91,12 +90,17 @@ export const uploadImage = async (userId: string, image: string): Promise<string
         console.log("Tentando fazer upload da imagem.")
         const response = await fetch(image);
         const blob = await response.blob();
-        const storageRef = ref(storage, `images/${userId}/${Date.now()}`);
-        console.log("Ref: ", !!storageRef);
-        await uploadBytes(storageRef, blob);
-        const imageUrl = await getDownloadURL(storageRef);
-        console.log("URL: ", imageUrl);
-        return imageUrl;
+        const fileName = `${userId}/${Date.now()}`;
+        // Supabase storage expects File or Blob
+        const { data, error } = await supabase.storage.from('images').upload(fileName, blob, {
+            cacheControl: '3600',
+            upsert: false,
+        });
+        if (error) {
+            throw error;
+        }
+        const { data: publicUrlData } = supabase.storage.from('images').getPublicUrl(fileName);
+        return publicUrlData.publicUrl;
     } catch (error: any) {
         console.error('Error uploading image: ', error);
         Alert.alert('Upload failed!', error.message);
@@ -119,11 +123,16 @@ export const deleteImage = async (imageUrl: string): Promise<boolean> => {
     try {
         console.log("Tentando deletar a imagem.");
 
-        // Cria uma referência ao arquivo no armazenamento
-        const fileRef = ref(storage, imageUrl);
-
-        // Deleta o arquivo
-        await deleteObject(fileRef);
+        // Supabase public URL is like https://your.supabase.co/storage/v1/object/public/images/<path>
+        // Extract the path after '/images/'
+        const parts = imageUrl.split('/images/');
+        if (parts.length < 2) {
+            console.warn('Unexpected image URL format for deletion:', imageUrl);
+            return false;
+        }
+        const filePath = parts[1];
+        const { error } = await supabase.storage.from('images').remove([filePath]);
+        if (error) throw error;
         console.log("Imagem deletada com sucesso!");
         return true;
     } catch (error: any) {

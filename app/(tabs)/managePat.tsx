@@ -1,7 +1,6 @@
 import {ActivityIndicator, Alert, Image, StyleSheet, View} from 'react-native';
 import React, { useEffect, useState } from 'react';
-import { db } from '@/FirebaseConfig';
-import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
+import { supabase } from '@/utils/supabase';
 import { getAuth } from 'firebase/auth';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { ThemedView } from "@/components/ui/ThemedView";
@@ -26,8 +25,7 @@ export default function manegePat() {
     const title = mode === "edit" ? 'Editar Patrimônio' : "Adicionar Patrimônio";
     const finalButtonText = mode === "edit" ? 'Atualizar' : "Adicionar";
 
-    const auth = getAuth();
-    const user = auth.currentUser;
+    const user = supabase.auth.getUser();
 
     const [formData, setFormData] = useState<Patrimonio | null>(mode === 'add' ? patrimonio : null);
     const [image, setImage] = useState<string | null>(null);
@@ -48,22 +46,23 @@ export default function manegePat() {
     useEffect(() => {
         if (mode === 'edit' && docId) {
             const fetchPatrimonioData = async () => {
-                const docRef = doc(db, 'patrimonios', docId);
                 try {
-                    const docSnap = await getDoc(docRef);
-                    if (docSnap.exists()) {
-                        const patrimonioData = docSnap.data() as Patrimonio;
-                        setFormData(patrimonioData);
-                        if (patrimonioData.image && patrimonioData.image.url) {
-                            setImage(patrimonioData.image.url);
-                        }
+                    const { data, error } = await supabase
+                        .from('patrimonios')
+                        .select('*')
+                        .eq('id', docId)
+                        .single();
+                    if (error) throw error;
+                    if (data) {
+                        setFormData(data);
+                        if (data.image && data.image.url) setImage(data.image.url);
                     } else {
-                        Alert.alert("Erro", "Patrimônio não encontrado.");
+                        Alert.alert('Erro', 'Patrimônio não encontrado.');
                         router.back();
                     }
                 } catch (error) {
-                    console.error("Erro ao buscar dados do patrimônio:", error);
-                    Alert.alert("Erro", "Não foi possível carregar os dados.");
+                    console.error('Erro ao buscar dados do patrimônio:', error);
+                    Alert.alert('Erro', 'Não foi possível carregar os dados.');
                 } finally {
                     setLoading(false);
                 }
@@ -92,19 +91,17 @@ export default function manegePat() {
         if (!user) return false;
 
         try {
-            const q = query(collection(db, "patrimonios"), where("patNum", "==", patNum));
-            let search = await getDocs(q);
-            if (search.empty || patNum === '') {
-                const q = query(collection(db, "patrimonios"), where("atmNum", "==", atmNum));
-                search = await getDocs(q);
-                if (search.empty || atmNum === '') {
-                    return false;
-                }else{
-                    return true;
-                }
-            } else{
-                return true;
+            if (patNum && patNum !== ''){
+                const { data: byPat, error: errPat } = await supabase.from('patrimonios').select('id').eq('patNum', patNum).limit(1);
+                if (errPat) throw errPat;
+                if (byPat && byPat.length > 0) return true;
             }
+            if (atmNum && atmNum !== ''){
+                const { data: byAtm, error: errAtm } = await supabase.from('patrimonios').select('id').eq('atmNum', atmNum).limit(1);
+                if (errAtm) throw errAtm;
+                if (byAtm && byAtm.length > 0) return true;
+            }
+            return false;
         } catch (error) {
             console.error("Erro ao buscar patrimônios: ", error);
             return false;
@@ -145,8 +142,9 @@ export default function manegePat() {
                                 if (formData?.image?.url) {
                                     await deleteImage(formData.image.url);
                                 }
-                                await deleteDoc(doc(db, "patrimonios", docId));
-                                Alert.alert("Sucesso", "Patrimônio deletado.");
+                                const { error } = await supabase.from('patrimonios').delete().eq('id', docId);
+                                if (error) throw error;
+                                Alert.alert('Sucesso', 'Patrimônio deletado.');
                                 router.back();
                             } catch (error) {
                                 setLoading(false);
@@ -247,11 +245,13 @@ export default function manegePat() {
                 }
             }
 
-            // Salva os dados no Firestore
-            if (mode === "add") {
-                await addDoc(collection(db, "patrimonios"), dataToSave);
-            } else if (mode === "edit" && docId) {
-                await updateDoc(doc(db, "patrimonios", docId), { ...dataToSave });
+            // Salva os dados no Supabase
+            if (mode === 'add') {
+                const { error } = await supabase.from('patrimonios').insert([dataToSave]);
+                if (error) throw error;
+            } else if (mode === 'edit' && docId) {
+                const { error } = await supabase.from('patrimonios').update(dataToSave).eq('id', docId);
+                if (error) throw error;
             }
 
             Alert.alert('Sucesso', mode === "add" ? 'Patrimônio adicionado!' : 'Patrimônio atualizado!');
