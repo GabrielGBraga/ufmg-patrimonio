@@ -6,22 +6,23 @@ import { ThemedText } from "@/components/ui/ThemedText";
 import { ThemedButton } from "@/components/ui/ThemedButton";
 import { useEffect } from "react";
 import { useCameraPermissions } from "expo-camera";
+import { supabase } from '@/utils/supabase';
 
 export default function TabOneScreen() {
     const user = auth.currentUser;
     const [cameraPermission, requestPermission] = useCameraPermissions();
 
-    useEffect(() => {
-        setTimeout(() => {
-            if (!user) {
-                console.log("No user logged in.");
-                router.replace("/");
-            }
-        }, 0);
-    }, []);
+    // useEffect(() => {
+    //     setTimeout(() => {
+    //         if (!user) {
+    //             console.log("No user logged in.");
+    //             router.replace("/");
+    //         }
+    //     }, 0);
+    // }, []);
 
     const singOut = async () => {
-        await auth.signOut();
+        await supabase.auth.signOut();
         router.back();
     };
 

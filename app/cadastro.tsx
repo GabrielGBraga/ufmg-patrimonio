@@ -24,12 +24,17 @@ export default function Cadastro () {
             error,    
         } = await supabase.auth.signUp({
             email: email,      
-            password: password,    
+            password: password,
+            options: {
+                data: {
+                    nome: nome,
+                }
+            }
         })    
         
         if (error) Alert.alert(error.message)    
-        
-        if (!session) Alert.alert('Please check your inbox for email verification!')    
+            
+        console.log('Sessão de cadastro:', session);
         
         setLoading(false)  
 
