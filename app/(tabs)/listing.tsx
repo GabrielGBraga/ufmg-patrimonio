@@ -49,8 +49,9 @@ export default function listing() {
   const isFocused = useIsFocused();
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
 
-  const user = (supabase.auth.getUser()).data.user;
-
+  const auth = getAuth();
+  const user = auth.currentUser;
+  
 
   useEffect(() => {
     if (isFocused && editado) {
@@ -87,7 +88,7 @@ export default function listing() {
    * Limpa o campo de entrada após a busca.
    */
   const fetchPatrimonio = async () => {
-    if (await user?.id && patNum !== "") {
+    if (user && patNum !== "") {
       try {
         // Try search by patNum first
         let { data, error } = await supabase

@@ -16,7 +16,7 @@ import { useForm } from 'react-hook-form';
 import CameraScreen from '@/components/ui/CameraScreen';
 import { formatAtmNum, formatPatNum } from '@/hooks/formating';
 
-export default async function manegePat() {
+export default function manegePat() {
     
     const params = useLocalSearchParams();
     const mode = params.mode as string;
@@ -25,7 +25,7 @@ export default async function manegePat() {
     const title = mode === "edit" ? 'Editar Patrimônio' : "Adicionar Patrimônio";
     const finalButtonText = mode === "edit" ? 'Atualizar' : "Adicionar";
 
-    const user = (await supabase.auth.getUser()).data.user;
+    const user = supabase.auth.getUser();
 
     const [formData, setFormData] = useState<Patrimonio | null>(mode === 'add' ? patrimonio : null);
     const [image, setImage] = useState<string | null>(null);
@@ -88,7 +88,7 @@ export default async function manegePat() {
     };
 
     const checkExistingPat = async (patNum: string, atmNum: string) => {
-        if (!(await user?.id)) return false;
+        if (!user) return false;
 
         try {
             if (patNum && patNum !== ''){
@@ -187,7 +187,7 @@ export default async function manegePat() {
     // ✅ **LÓGICA DE SUBMISSÃO REATORADA**
     // Esta função agora controla todo o fluxo de salvar os dados.
     const onSubmit = async () => {
-        if (!formData || !(await user?.id)) {
+        if (!formData || !user) {
             return Alert.alert('Erro', 'Dados do formulário ou usuário não encontrados.');
         }
         if (!formData.patNum && !formData.atmNum) {
@@ -220,7 +220,7 @@ export default async function manegePat() {
                 ...formData,
                 patNum: patFormat,
                 atmNum: atmFormat,
-                lastEditedBy: await user.email || 'N/A',
+                lastEditedBy: user.email || 'N/A',
                 lastEditedAt: new Date().toLocaleDateString('pt-BR'),
             };
 
@@ -237,7 +237,7 @@ export default async function manegePat() {
                 if (mode === 'edit' && formData.image?.url) {
                     await deleteImage(formData.image.url);
                 }
-                const newImageUrl = await uploadImage(await user.id, image);
+                const newImageUrl = await uploadImage(user.uid, image);
                 if (newImageUrl) {
                     dataToSave.image.url = newImageUrl;
                 } else {
