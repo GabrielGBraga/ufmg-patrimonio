@@ -2,6 +2,7 @@ import * as ImagePicker from 'expo-image-picker';
 import {Alert} from "react-native";
 import {getDownloadURL, ref, StorageReference, uploadBytes, deleteObject} from "firebase/storage";
 import {storage} from "@/FirebaseConfig";
+import { supabase } from '@/utils/supabase';
 
 type imageData = {
     uri: string;
@@ -67,36 +68,29 @@ export const getImage = async (selectionType: 'Camera'|'Gallery'): Promise<image
 };
 
 /**
- * Faz o upload de uma imagem para o armazenamento e atualiza o estado com a URL da imagem.
- *
- * Esta função verifica se há um usuário autenticado e uma imagem selecionada.
- * Se alguma dessas condições não for atendida, exibe um alerta e encerra a execução.
- * Caso contrário, realiza o seguinte fluxo:
- *
- * Fluxo:
- * 1. Obtém o arquivo da imagem a partir do URI usando `fetch` e converte para um blob.
- * 2. Cria uma referência no armazenamento Firebase com um caminho exclusivo baseado no ID do usuário e timestamp.
- * 3. Envia o blob para o armazenamento Firebase usando `uploadBytes`.
- * 4. Obtém a URL pública da imagem com `getDownloadURL`.
- * 5. Atualiza o estado do formulário (`formData`) para incluir a URL da imagem no campo `image`.
- *
- * Tratamento de erros:
- * - Qualquer erro durante o upload é capturado e exibido no console e em um alerta para o usuário.
- *
- * Nota: Certifique-se de que o Firebase Storage esteja configurado corretamente no projeto.
+ * 
+ * @param image 
+ * @returns fileName || undefined
  */
-export const uploadImage = async (userId: string, image: string): Promise<string | undefined> => {
+export const uploadImage = async (image: string): Promise<string | undefined> => {
 
     try {
         console.log("Tentando fazer upload da imagem.")
         const response = await fetch(image);
         const blob = await response.blob();
-        const storageRef = ref(storage, `images/${userId}/${Date.now()}`);
-        console.log("Ref: ", !!storageRef);
-        await uploadBytes(storageRef, blob);
-        const imageUrl = await getDownloadURL(storageRef);
-        console.log("URL: ", imageUrl);
-        return imageUrl;
+        
+        const arrayBuffer = await new Response(blob).arrayBuffer();
+        const fileName = `patPhotos/${Date.now()}.jpg`;
+        const { error } = await supabase
+            .storage
+            .from('images')
+            .upload(fileName, arrayBuffer, { contentType: 'image/jpeg', upsert: false });
+        if (error) {
+            console.error('Error uploading image: ', error);
+        }
+        
+        return fileName;
+
     } catch (error: any) {
         console.error('Error uploading image: ', error);
         Alert.alert('Upload failed!', error.message);

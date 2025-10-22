@@ -8,18 +8,19 @@ import { useEffect } from "react";
 import { useCameraPermissions } from "expo-camera";
 import { supabase } from '@/utils/supabase';
 
-export default function TabOneScreen() {
-    const user = auth.currentUser;
+export default async function TabOneScreen() {
+    
+    const user = (await supabase.auth.getUser()).data.user;
     const [cameraPermission, requestPermission] = useCameraPermissions();
 
-    // useEffect(() => {
-    //     setTimeout(() => {
-    //         if (!user) {
-    //             console.log("No user logged in.");
-    //             router.replace("/");
-    //         }
-    //     }, 0);
-    // }, []);
+    useEffect(() => {
+        setTimeout(() => {
+            if (!user) {
+                console.log("No user logged in.");
+                router.replace("/");
+            }
+        }, 0);
+    }, []);
 
     const singOut = async () => {
         await supabase.auth.signOut();

@@ -16,8 +16,9 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useForm } from 'react-hook-form';
 import CameraScreen from '@/components/ui/CameraScreen';
 import { formatAtmNum, formatPatNum } from '@/hooks/formating';
+import { supabase } from '@/utils/supabase';
 
-export default function manegePat() {
+export default async function manegePat() {
     
     const params = useLocalSearchParams();
     const mode = params.mode as string;
@@ -26,8 +27,7 @@ export default function manegePat() {
     const title = mode === "edit" ? 'Editar Patrimônio' : "Adicionar Patrimônio";
     const finalButtonText = mode === "edit" ? 'Atualizar' : "Adicionar";
 
-    const auth = getAuth();
-    const user = auth.currentUser;
+    const user = (await supabase.auth.getUser()).data.user;
 
     const [formData, setFormData] = useState<Patrimonio | null>(mode === 'add' ? patrimonio : null);
     const [image, setImage] = useState<string | null>(null);

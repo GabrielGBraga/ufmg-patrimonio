@@ -29,12 +29,13 @@ import { useIsFocused } from "@react-navigation/native";
 import CameraScreen from "@/components/ui/CameraScreen";
 import { ScrollableAreaView } from "@/components/layout/ScrollableAreaView";
 import { formatAtmNum, formatInputForSearch, formatPatNum } from "@/hooks/formating";
+import { supabase } from "@/utils/supabase";
 
 /**
  * Este componente renderiza uma tela para pesquisar e exibir patrimônios pelo número.
  * Ele inclui um campo de busca, um botão e uma lista de patrimônios buscados no Firestore.
  */
-export default function listing() {
+export default async function listing() {
   // Estado para armazenar o número do patrimônio a ser pesquisado
   const [patNum, setPatNum] = useState("");
   // Estado para armazenar a lista de patrimônios buscados
@@ -50,8 +51,8 @@ export default function listing() {
   const isFocused = useIsFocused();
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
 
-  const auth = getAuth();
-  const user = auth.currentUser;
+  const user = (await supabase.auth.getUser()).data.user;
+  
   const patrimonioCollection = collection(db, "patrimonios");
 
   useEffect(() => {
