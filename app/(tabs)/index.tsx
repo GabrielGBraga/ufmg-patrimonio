@@ -9,17 +9,17 @@ import { useCameraPermissions } from "expo-camera";
 import { supabase } from '@/utils/supabase';
 
 export default function TabOneScreen() {
-    const user = auth.currentUser;
     const [cameraPermission, requestPermission] = useCameraPermissions();
+    const user = (supabase.auth.getUser()).data.user;
 
-    // useEffect(() => {
-    //     setTimeout(() => {
-    //         if (!user) {
-    //             console.log("No user logged in.");
-    //             router.replace("/");
-    //         }
-    //     }, 0);
-    // }, []);
+    useEffect(() => {
+        setTimeout(async () => {
+            if (!(await user?.id)) {
+                console.log("No user logged in.");
+                router.replace("/");
+            }
+        }, 0);
+    }, []);
 
     const singOut = async () => {
         await supabase.auth.signOut();
@@ -68,6 +68,10 @@ export default function TabOneScreen() {
             {/* Botão para pesquisar um patrimonio */}
             <ThemedButton style={styles.button} onPress={searchPage}>
                 <ThemedText style={styles.text}>Pesquisar</ThemedText>
+            </ThemedButton>
+
+            <ThemedButton style={styles.button} onPress={async ()=>{ console.log((await supabase.auth.getUser()).data.user?.email) }}>
+                <ThemedText style={styles.text}>log</ThemedText>
             </ThemedButton>
 
         </ThemedView>
