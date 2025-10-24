@@ -2,7 +2,6 @@ import {ActivityIndicator, Alert, Image, StyleSheet, View} from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { db } from '@/FirebaseConfig';
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { ThemedView } from "@/components/ui/ThemedView";
 import { ThemedButton } from "@/components/ui/ThemedButton";
@@ -249,7 +248,9 @@ export default  function manegePat() {
 
             // Salva os dados no Firestore
             if (mode === "add") {
-                await addDoc(collection(db, "patrimonios"), dataToSave);
+                const { error } = await supabase
+                    .from('patrimonios')
+                    .insert({dataToSave})
             } else if (mode === "edit" && docId) {
                 await updateDoc(doc(db, "patrimonios", docId), { ...dataToSave });
             }
