@@ -87,10 +87,10 @@ export const uploadImage = async (image: string): Promise<string | undefined> =>
             .upload(fileName, arrayBuffer, { contentType: 'image/jpeg', upsert: false });
         if (error) {
             console.error('Error uploading image: ', error);
+        } else {
+            console.log('Image uploaded successfully: ', fileName);
         }
-        
         return fileName;
-
     } catch (error: any) {
         console.error('Error uploading image: ', error);
         Alert.alert('Upload failed!', error.message);
@@ -98,31 +98,20 @@ export const uploadImage = async (image: string): Promise<string | undefined> =>
     }
 };
 
-/**
- * Deleta uma imagem do armazenamento Firebase com base na URL salva.
- *
- * Esta função extrai o caminho do arquivo da URL fornecida, cria uma referência
- * ao arquivo no armazenamento Firebase e o exclui.
- *
- * Tratamento de erros:
- * - Qualquer erro durante a exclusão é capturado e exibido no console e em um alerta para o usuário.
- *
- * Nota: Certifique-se de que o Firebase Storage esteja configurado corretamente no projeto.
- */
-export const deleteImage = async (imageUrl: string): Promise<boolean> => {
+
+export const deleteImage = async (imageUrl: string): Promise<void> => {
     try {
-        console.log("Tentando deletar a imagem.");
-
-        // Cria uma referência ao arquivo no armazenamento
-        const fileRef = ref(storage, imageUrl);
-
-        // Deleta o arquivo
-        await deleteObject(fileRef);
-        console.log("Imagem deletada com sucesso!");
-        return true;
+        const { data, error } = await supabase
+            .storage
+            .from('avatars')
+            .remove(['folder/avatar1.png'])
+        
+        if (error) {
+            console.error("Erro ao deletar a imagem: ", error);
+            Alert.alert("Erro", "Erro ao deletar a imagem");
+        }
     } catch (error: any) {
         console.error("Erro ao deletar a imagem: ", error);
         Alert.alert("Erro ao deletar a imagem!", error.message);
-        return false;
     }
 };

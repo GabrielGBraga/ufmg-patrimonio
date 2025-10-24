@@ -4,7 +4,7 @@
  */
 export const patrimonio = {
     image: {
-        url: '',
+        fileName: '',
         height: 0,
         width: 0,
     },

@@ -8,15 +8,17 @@ import { useEffect } from "react";
 import { useCameraPermissions } from "expo-camera";
 import { supabase } from '@/utils/supabase';
 
-export default async function TabOneScreen() {
+export default function TabOneScreen() {
     
-    const user = (await supabase.auth.getUser()).data.user;
+    const user = async () => {
+        return (await supabase.auth.getUser()).data.user;
+    }
     const [cameraPermission, requestPermission] = useCameraPermissions();
 
     useEffect(() => {
-        setTimeout(() => {
-            if (!user) {
-                console.log("No user logged in.");
+        setTimeout(async () => {
+            if (!(await user())) {
+                console.log("No (await user()) logged in.");
                 router.replace("/");
             }
         }, 0);
@@ -69,6 +71,12 @@ export default async function TabOneScreen() {
             {/* Botão para pesquisar um patrimonio */}
             <ThemedButton style={styles.button} onPress={searchPage}>
                 <ThemedText style={styles.text}>Pesquisar</ThemedText>
+            </ThemedButton>
+
+
+            {/* Botão para pesquisar um patrimonio */}
+            <ThemedButton style={styles.button} onPress={async () => { console.log((await user())?.email)}}>
+                <ThemedText style={styles.text}>log</ThemedText>
             </ThemedButton>
 
         </ThemedView>

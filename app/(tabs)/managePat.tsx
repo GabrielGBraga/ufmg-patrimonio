@@ -9,7 +9,7 @@ import { ThemedButton } from "@/components/ui/ThemedButton";
 import { ScrollableAreaView } from "@/components/layout/ScrollableAreaView";
 import { TextInputGroup } from "@/components/TextInputGroup";
 import { CheckboxGroup } from "@/components/CheckboxGroup";
-import { getImage, uploadImage, deleteImage } from "@/hooks/ImageHandler";
+import { deleteImage, getImage, uploadImage } from "@/hooks/ImageHandler";
 import { patrimonio, Patrimonio } from "@/constants/Patrimonio";
 import { ThemedHeader } from '@/components/ui/ThemedHeader';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -18,7 +18,7 @@ import CameraScreen from '@/components/ui/CameraScreen';
 import { formatAtmNum, formatPatNum } from '@/hooks/formating';
 import { supabase } from '@/utils/supabase';
 
-export default async function manegePat() {
+export default  function manegePat() {
     
     const params = useLocalSearchParams();
     const mode = params.mode as string;
@@ -27,7 +27,9 @@ export default async function manegePat() {
     const title = mode === "edit" ? 'Editar Patrimônio' : "Adicionar Patrimônio";
     const finalButtonText = mode === "edit" ? 'Atualizar' : "Adicionar";
 
-    const user = (await supabase.auth.getUser()).data.user;
+    const user = async () => {
+        return (await supabase.auth.getUser()).data.user;
+    }
 
     const [formData, setFormData] = useState<Patrimonio | null>(mode === 'add' ? patrimonio : null);
     const [image, setImage] = useState<string | null>(null);
@@ -44,6 +46,15 @@ export default async function manegePat() {
         }
     }, [formData?.atmNum])
     
+    useEffect(() => {
+        if (formData?.image.fileName && formData?.image.fileName !== '') {
+            const { data } = supabase
+                .storage
+                .from('public-bucket')
+                .getPublicUrl('folder/avatar1.png')
+            setImage(data.publicUrl);
+        }
+    }, [formData?.image.fileName]);
 
     useEffect(() => {
         if (mode === 'edit' && docId) {
@@ -54,8 +65,8 @@ export default async function manegePat() {
                     if (docSnap.exists()) {
                         const patrimonioData = docSnap.data() as Patrimonio;
                         setFormData(patrimonioData);
-                        if (patrimonioData.image && patrimonioData.image.url) {
-                            setImage(patrimonioData.image.url);
+                        if (patrimonioData.image && patrimonioData.image.fileName) {
+                            setImage(patrimonioData.image.fileName);
                         }
                     } else {
                         Alert.alert("Erro", "Patrimônio não encontrado.");
@@ -89,7 +100,7 @@ export default async function manegePat() {
     };
 
     const checkExistingPat = async (patNum: string, atmNum: string) => {
-        if (!user) return false;
+        if (!(await user())) return false;
 
         try {
             const q = query(collection(db, "patrimonios"), where("patNum", "==", patNum));
@@ -136,14 +147,13 @@ export default async function manegePat() {
                 "Você tem certeza que deseja deletar este patrimônio?",
                 [
                     { text: "Cancelar", style: "cancel" },
-                    {
-                        text: "Deletar",
-                        style: "destructive",
+                    { text: "Deletar", style: "destructive",
+
                         onPress: async () => {
                             try {
                                 setLoading(true);
-                                if (formData?.image?.url) {
-                                    await deleteImage(formData.image.url);
+                                if (formData?.image?.fileName) {
+                                    await deleteImage(formData.image.fileName);
                                 }
                                 await deleteDoc(doc(db, "patrimonios", docId));
                                 Alert.alert("Sucesso", "Patrimônio deletado.");
@@ -165,15 +175,13 @@ export default async function manegePat() {
             const result = await getImage(selectionType);
             if (result) {
                 setImage(result.uri);
-                setImageCancel(false); // Nova imagem selecionada, então não está "cancelada"
-                // ✅ **CORREÇÃO**: Adicionada verificação de segurança para o estado nulo.
                 setFormData((prevState) => {
                     if (!prevState) return null;
                     return {
                         ...prevState,
                         image: {
                             ...prevState.image,
-                            url: prevState.image?.url || '', // Mantém a URL antiga por enquanto
+                            url: prevState.image?.fileName || '', // Mantém a URL antiga por enquanto
                             height: result.height,
                             width: result.width,
                         }
@@ -189,7 +197,7 @@ export default async function manegePat() {
     // ✅ **LÓGICA DE SUBMISSÃO REATORADA**
     // Esta função agora controla todo o fluxo de salvar os dados.
     const onSubmit = async () => {
-        if (!formData || !user) {
+        if (!formData || !(await user())) {
             return Alert.alert('Erro', 'Dados do formulário ou usuário não encontrados.');
         }
         if (!formData.patNum && !formData.atmNum) {
@@ -222,26 +230,18 @@ export default async function manegePat() {
                 ...formData,
                 patNum: patFormat,
                 atmNum: atmFormat,
-                lastEditedBy: user.email || 'N/A',
+                lastEditedBy: (await user())?.email || 'N/A',
                 lastEditedAt: new Date().toLocaleDateString('pt-BR'),
             };
 
-            const newImageSelected = image && (!formData.image?.url || image !== formData.image.url);
-            
-            // Caso 1: Deletar a imagem existente sem adicionar uma nova
-            if (imageCancel && mode === 'edit' && formData.image?.url) {
-                await deleteImage(formData.image.url);
-                dataToSave.image = { url: '', height: 0, width: 0 };
-            }
-            // Caso 2: Fazer upload de uma nova imagem
-            else if (newImageSelected) {
+            if (imageCancel && image) {
                 // Se estiver editando, apague a imagem antiga primeiro
-                if (mode === 'edit' && formData.image?.url) {
-                    await deleteImage(formData.image.url);
+                if (mode === 'edit' && formData.image?.fileName) {
+                    await deleteImage(formData.image.fileName);
                 }
-                const newImageUrl = await uploadImage(user.uid, image);
+                const newImageUrl = await uploadImage(image);
                 if (newImageUrl) {
-                    dataToSave.image.url = newImageUrl;
+                    dataToSave.image.fileName = newImageUrl;
                 } else {
                     throw new Error("Falha no upload da imagem.");
                 }

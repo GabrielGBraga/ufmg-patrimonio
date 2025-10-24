@@ -35,7 +35,7 @@ import { supabase } from "@/utils/supabase";
  * Este componente renderiza uma tela para pesquisar e exibir patrimônios pelo número.
  * Ele inclui um campo de busca, um botão e uma lista de patrimônios buscados no Firestore.
  */
-export default async function listing() {
+export default  function listing() {
   // Estado para armazenar o número do patrimônio a ser pesquisado
   const [patNum, setPatNum] = useState("");
   // Estado para armazenar a lista de patrimônios buscados
@@ -51,7 +51,9 @@ export default async function listing() {
   const isFocused = useIsFocused();
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
 
-  const user = (await supabase.auth.getUser()).data.user;
+  const user = async () => {
+    return (await supabase.auth.getUser()).data.user;
+  }
   
   const patrimonioCollection = collection(db, "patrimonios");
 
@@ -90,7 +92,8 @@ export default async function listing() {
    * Limpa o campo de entrada após a busca.
    */
   const fetchPatrimonio = async () => {
-    if (user && patNum !== "") {
+
+    if ((await user()) && patNum !== "") {
       try {
         const q = query(patrimonioCollection, where("patNum", "==", formatPatNum(patNum)));
         let search = await getDocs(q);
