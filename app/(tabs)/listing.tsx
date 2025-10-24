@@ -95,30 +95,52 @@ export default  function listing() {
 
     if ((await user()) && patNum !== "") {
       try {
-        const q = query(patrimonioCollection, where("patNum", "==", formatPatNum(patNum)));
-        let search = await getDocs(q);
-        if (search.empty) {
-          const q = query(patrimonioCollection, where("atmNum", "==", formatAtmNum(patNum)));
-          search = await getDocs(q);
-          if (search.empty) {
+
+        const { data, error } = await supabase
+          .from('patrimonios')
+          .select()
+          .eq('patNum', formatPatNum(patNum))
+
+        if (error) {
+          const { data, error } = await supabase
+            .from('patrimonios')
+            .select()
+            .eq('atmNum', formatPatNum(patNum))
+            
+          if (error) {
             Alert.alert("Patrimônio não encontrado.");
+            console.error("Erro ao buscar patrimônio: ", error);
+            return;
           }
         }
+        
+          if(data) {
+            data.forEach((doc) => {
+              setDocId(doc.id);
+            });
+            setPatrimonioList((prevPatrimonio) => {
+              // 3. IMPORTANTE: Criamos um *novo* objeto copiando o estado anterior.
+              const newPatrimonio = { ...prevPatrimonio };
 
-        if(!search.empty) {
-          const data = search;
+              // 4. Esta é a sua lógica, operando em 'newPatrimonio' (a cópia).
+              // Pegamos as chaves do nosso objeto de estado.
+              (Object.keys(newPatrimonio) as (keyof Patrimonio)[]).forEach((key) => {
+                // 5. Verificamos se a chave (ex: "patNum") existe no 'dataSource'.
+                // A propriedade 'id' do 'dataSource' é automaticamente ignorada
+                // porque 'id' não é uma chave em 'newPatrimonio'.
+                if (key in data) {
+                  // Se existir, atualizamos a propriedade no *nosso novo* objeto.
+                  // Estamos confiando que as estruturas são compatíveis.
+                  newPatrimonio[key] = data[key];
+                }
+              });
 
-          data.forEach((doc) => {
-            setDocId(doc.id);
-          });
-          setPatrimonioList(
-            data.docs.map((doc) => ({
-              ...(doc.data() as Patrimonio), // Cast to your expected type
-            }))
-          );
-          setPatNum("");
-        }
-
+              // 6. Finalmente, retornamos o 'newPatrimonio'.
+              // O React verá que é um novo objeto e irá re-renderizar o componente.
+              return newPatrimonio;
+            });
+            setPatNum("");
+          }
       } catch (error) {
         console.error("Erro ao buscar patrimônios: ", error);
       }
