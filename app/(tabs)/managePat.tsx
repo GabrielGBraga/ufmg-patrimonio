@@ -239,7 +239,7 @@ export default  function manegePat() {
                     await deleteImage(formData.image.fileName);
                 }
                 const newImageUrl = await uploadImage(image);
-                if (newImageUrl) {
+                if (newImageUrl != '' && newImageUrl) {
                     dataToSave.image.fileName = newImageUrl;
                 } else {
                     throw new Error("Falha no upload da imagem.");

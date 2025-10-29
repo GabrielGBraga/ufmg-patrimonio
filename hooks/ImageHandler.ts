@@ -81,8 +81,7 @@ export const uploadImage = async (image: string): Promise<string | undefined> =>
         
         const arrayBuffer = await new Response(blob).arrayBuffer();
         const fileName = `patPhotos/${Date.now()}.jpg`;
-        const { error } = await supabase
-            .storage
+        const { error } = await supabase.storage
             .from('images')
             .upload(fileName, arrayBuffer, { contentType: 'image/jpeg', upsert: false });
         if (error) {

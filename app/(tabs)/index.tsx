@@ -7,6 +7,7 @@ import { ThemedButton } from "@/components/ui/ThemedButton";
 import { useEffect } from "react";
 import { useCameraPermissions } from "expo-camera";
 import { supabase } from '@/utils/supabase';
+import { getImage } from '@/hooks/ImageHandler';
 
 export default function TabOneScreen() {
     
@@ -72,13 +73,6 @@ export default function TabOneScreen() {
             <ThemedButton style={styles.button} onPress={searchPage}>
                 <ThemedText style={styles.text}>Pesquisar</ThemedText>
             </ThemedButton>
-
-
-            {/* Botão para pesquisar um patrimonio */}
-            <ThemedButton style={styles.button} onPress={async () => { console.log((await user())?.email)}}>
-                <ThemedText style={styles.text}>log</ThemedText>
-            </ThemedButton>
-
         </ThemedView>
     );
 }

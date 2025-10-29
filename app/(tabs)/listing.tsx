@@ -96,12 +96,17 @@ export default  function listing() {
     if ((await user()) && patNum !== "") {
       try {
 
+        console.log("In fetch: ", formatPatNum(patNum));
+        
         const { data, error } = await supabase
           .from('patrimonios')
           .select()
           .eq('patNum', formatPatNum(patNum))
 
+          console.log("Data fetched: ", data);
+
         if (error) {
+          console.log("In error")
           const { data, error } = await supabase
             .from('patrimonios')
             .select()
@@ -113,7 +118,11 @@ export default  function listing() {
             return;
           }
         }
-        
+
+        console.log("Out of fetch: ", data);
+
+        const dataParced = data ? JSON.parse(data[0]) : null;
+
           if(data) {
             data.forEach((doc) => {
               setDocId(doc.id);
