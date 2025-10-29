@@ -98,28 +98,28 @@ export default  function manegePat() {
         setImageCancel(true);
     };
 
-    const checkExistingPat = async (patNum: string, atmNum: string) => {
-        if (!(await user())) return false;
+    // const checkExistingPat = async (patNum: string, atmNum: string) => {
+    //     if (!(await user())) return false;
 
-        try {
-            const q = query(collection(db, "patrimonios"), where("patNum", "==", patNum));
-            let search = await getDocs(q);
-            if (search.empty || patNum === '') {
-                const q = query(collection(db, "patrimonios"), where("atmNum", "==", atmNum));
-                search = await getDocs(q);
-                if (search.empty || atmNum === '') {
-                    return false;
-                }else{
-                    return true;
-                }
-            } else{
-                return true;
-            }
-        } catch (error) {
-            console.error("Erro ao buscar patrimônios: ", error);
-            return false;
-        }
-    }
+    //     try {
+    //         const q = query(collection(db, "patrimonios"), where("patNum", "==", patNum));
+    //         let search = await getDocs(q);
+    //         if (search.empty || patNum === '') {
+    //             const q = query(collection(db, "patrimonios"), where("atmNum", "==", atmNum));
+    //             search = await getDocs(q);
+    //             if (search.empty || atmNum === '') {
+    //                 return false;
+    //             }else{
+    //                 return true;
+    //             }
+    //         } else{
+    //             return true;
+    //         }
+    //     } catch (error) {
+    //         console.error("Erro ao buscar patrimônios: ", error);
+    //         return false;
+    //     }
+    // }
 
     const inputs = formData ? [
         { label: 'Número de Patrimônio', placeholder: 'Digite o número de patrimônio', key: 'patNum' },
@@ -205,9 +205,9 @@ export default  function manegePat() {
         if (!formData.conservacao) {
             return Alert.alert('Erro', 'Selecione uma opção de conservação.');
         }
-        if (await checkExistingPat(formData.patNum, formData.atmNum) && mode === 'add') {
-            return Alert.alert('Erro', 'Número de patrimônio ou ATM já existe.');
-        }
+        // if (await checkExistingPat(formData.patNum, formData.atmNum) && mode === 'add') {
+        //     return Alert.alert('Erro', 'Número de patrimônio ou ATM já existe.');
+        // }
 
         let patFormat = formatPatNum(formData.patNum);
 
@@ -246,16 +246,20 @@ export default  function manegePat() {
                 }
             }
 
+            let patrimonios = JSON.stringify(dataToSave)
+
             // Salva os dados no Firestore
             if (mode === "add") {
                 const { error } = await supabase
                     .from('patrimonios')
-                    .insert({dataToSave})
+                    .insert(dataToSave)
+
+                if (error) console.error('Erro ao adicionar patrimônio:', error);
             } else if (mode === "edit" && docId) {
                 await updateDoc(doc(db, "patrimonios", docId), { ...dataToSave });
             }
 
-            Alert.alert('Sucesso', mode === "add" ? 'Patrimônio adicionado!' : 'Patrimônio atualizado!');
+            if(true) Alert.alert('Sucesso', mode === "add" ? 'Patrimônio adicionado!' : 'Patrimônio atualizado!');
             router.back();
 
         } catch (error) {
@@ -281,6 +285,7 @@ export default  function manegePat() {
             <View style={styles.container}>
                 <ThemedHeader title="Escanear Patrimônio" arrowBack={() => setScanBool(false)} />
                 <CameraScreen
+                    
                     onBarcodeScanned={({ data }) => {
                         setValue('Número de Patrimônio', data);
                         setFormData(prevState => prevState ? { ...prevState, patNum: data } : null);
