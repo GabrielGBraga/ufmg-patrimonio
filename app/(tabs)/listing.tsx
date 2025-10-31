@@ -30,6 +30,7 @@ import CameraScreen from "@/components/ui/CameraScreen";
 import { ScrollableAreaView } from "@/components/layout/ScrollableAreaView";
 import { formatAtmNum, formatInputForSearch, formatPatNum } from "@/hooks/formating";
 import { supabase } from "@/utils/supabase";
+import { get } from "react-native/Libraries/TurboModule/TurboModuleRegistry";
 
 /**
  * Este componente renderiza uma tela para pesquisar e exibir patrimônios pelo número.
@@ -73,11 +74,25 @@ export default  function listing() {
     })();
   }, []);
 
-  // useEffect(() => {
-  //   if(patNum.length >= 10){
-  //     setPatNum(formatInputForSearch(patNum));
-  //   }
-  // }, [patNum]);
+  useEffect(() => {
+    const getUrl = async () => {
+      if (patrimonioList[0]?.image.fileName) {
+        const { data, error } = await supabase
+          .storage  
+          .from('images')  
+          .createSignedUrl(patrimonioList[0].image.fileName, 60)
+        if (error) return console.error("Error fetching image URL: ", error);
+        if (data?.signedUrl) {
+          setImage(data.signedUrl);
+          console.log("Image URL: ", data.signedUrl);
+        } else{
+          console.log("No signed URL returned");
+        }
+      }
+    };
+
+    getUrl();
+  }, [patrimonioList[0]?.image.fileName]);
 
   if (hasPermission === null) {
     return <ThemedText>Requesting camera permissions...</ThemedText>;
@@ -103,8 +118,6 @@ export default  function listing() {
           .select()
           .eq('patNum', formatPatNum(patNum))
 
-          console.log("Data fetched: ", data);
-
         if (error) {
           console.log("In error")
           const { data, error } = await supabase
@@ -119,37 +132,43 @@ export default  function listing() {
           }
         }
 
-        console.log("Out of fetch: ", data);
+        if (data && data.length > 0) {
+          const { id, ...patrimonioData } = data[0];
+          setDocId(id);
+          setPatrimonioList([patrimonioData as Patrimonio]);
+        }
 
-        const dataParced = data ? JSON.parse(data[0]) : null;
+        // const dataParced = data ? JSON.parse(data[0]) : null;
 
-          if(data) {
-            data.forEach((doc) => {
-              setDocId(doc.id);
-            });
-            setPatrimonioList((prevPatrimonio) => {
-              // 3. IMPORTANTE: Criamos um *novo* objeto copiando o estado anterior.
-              const newPatrimonio = { ...prevPatrimonio };
+          // if(data) {
+          //   data.forEach((doc) => {
+          //     setDocId(doc.id);
+          //   });
+          //   setPatrimonioList((prevPatrimonio) => {
+          //     // 3. IMPORTANTE: Criamos um *novo* objeto copiando o estado anterior.
+          //     const newPatrimonio = { ...prevPatrimonio };
 
-              // 4. Esta é a sua lógica, operando em 'newPatrimonio' (a cópia).
-              // Pegamos as chaves do nosso objeto de estado.
-              (Object.keys(newPatrimonio) as (keyof Patrimonio)[]).forEach((key) => {
-                // 5. Verificamos se a chave (ex: "patNum") existe no 'dataSource'.
-                // A propriedade 'id' do 'dataSource' é automaticamente ignorada
-                // porque 'id' não é uma chave em 'newPatrimonio'.
-                if (key in data) {
-                  // Se existir, atualizamos a propriedade no *nosso novo* objeto.
-                  // Estamos confiando que as estruturas são compatíveis.
-                  newPatrimonio[key] = data[key];
-                }
-              });
+          //     // 4. Esta é a sua lógica, operando em 'newPatrimonio' (a cópia).
+          //     // Pegamos as chaves do nosso objeto de estado.
+          //     (Object.keys(newPatrimonio) as (keyof Patrimonio)[]).forEach((key) => {
+          //       // 5. Verificamos se a chave (ex: "patNum") existe no 'dataSource'.
+          //       // A propriedade 'id' do 'dataSource' é automaticamente ignorada
+          //       // porque 'id' não é uma chave em 'newPatrimonio'.
+          //       if (key in data) {
+          //         // Se existir, atualizamos a propriedade no *nosso novo* objeto.
+          //         // Estamos confiando que as estruturas são compatíveis.
+          //         newPatrimonio[key] = data[key];
+          //       }
+          //     });
 
-              // 6. Finalmente, retornamos o 'newPatrimonio'.
-              // O React verá que é um novo objeto e irá re-renderizar o componente.
-              return newPatrimonio;
-            });
-            setPatNum("");
-          }
+          //     console.log("New patrimonio constructed: ", newPatrimonio);
+
+          //     // 6. Finalmente, retornamos o 'newPatrimonio'.
+          //     // O React verá que é um novo objeto e irá re-renderizar o componente.
+          //     return newPatrimonio;
+          //   });
+          //   setPatNum("");
+          // }
       } catch (error) {
         console.error("Erro ao buscar patrimônios: ", error);
       }
@@ -183,7 +202,7 @@ export default  function listing() {
         {item.image.url !== "" && (
           <View style={styles.imageContainer}>
             <Image
-              source={{ uri: item.image.url }}
+              source={{ uri: image }}
               style={{
                 height: item.image.height,
                 width: item.image.width,
