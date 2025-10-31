@@ -73,7 +73,6 @@ export const getImage = async (selectionType: 'Camera'|'Gallery'): Promise<image
  * @returns fileName || undefined
  */
 export const uploadImage = async (image: string): Promise<string | undefined> => {
-
     try {
         console.log("Tentando fazer upload da imagem.")
         const response = await fetch(image);
@@ -98,12 +97,12 @@ export const uploadImage = async (image: string): Promise<string | undefined> =>
 };
 
 
-export const deleteImage = async (imageUrl: string): Promise<void> => {
+export const deleteImage = async (fileName: string): Promise<void> => {
     try {
         const { data, error } = await supabase
             .storage
             .from('avatars')
-            .remove(['folder/avatar1.png'])
+            .remove([fileName])
         
         if (error) {
             console.error("Erro ao deletar a imagem: ", error);

@@ -205,6 +205,9 @@ export default  function manegePat() {
         if (!formData.conservacao) {
             return Alert.alert('Erro', 'Selecione uma opção de conservação.');
         }
+        if (!image){
+            return Alert.alert('Erro', 'Adicione uma imagem do patrimônio.');
+        }
         // if (await checkExistingPat(formData.patNum, formData.atmNum) && mode === 'add') {
         //     return Alert.alert('Erro', 'Número de patrimônio ou ATM já existe.');
         // }
@@ -233,22 +236,20 @@ export default  function manegePat() {
                 lastEditedAt: new Date().toLocaleDateString('pt-BR'),
             };
 
-            if (imageCancel && image) {
-                // Se estiver editando, apague a imagem antiga primeiro
-                if (mode === 'edit' && formData.image?.fileName) {
-                    await deleteImage(formData.image.fileName);
-                }
-                const newImageUrl = await uploadImage(image);
-                if (newImageUrl != '' && newImageUrl) {
-                    dataToSave.image.fileName = newImageUrl;
+            // Se estiver editando, apague a imagem antiga primeiro
+            if (mode === 'edit' && formData.image?.fileName && imageCancel) {
+                await deleteImage(formData.image.fileName);
+            }
+            if (mode === "add" || imageCancel) {
+                const imageFileName = await uploadImage(image);
+                if (imageFileName != '' && imageFileName) {
+                    dataToSave.image.fileName = imageFileName;
                 } else {
                     throw new Error("Falha no upload da imagem.");
                 }
             }
 
-            let patrimonios = JSON.stringify(dataToSave)
-
-            // Salva os dados no Firestore
+            // Salva os dados no Supabase
             if (mode === "add") {
                 const { error } = await supabase
                     .from('patrimonios')
