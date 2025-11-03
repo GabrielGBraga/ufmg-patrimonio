@@ -101,7 +101,7 @@ export const deleteImage = async (fileName: string): Promise<void> => {
     try {
         const { data, error } = await supabase
             .storage
-            .from('avatars')
+            .from('images')
             .remove([fileName])
         
         if (error) {

@@ -165,7 +165,14 @@ export default  function manegePat() {
                                 if (formData?.image?.fileName) {
                                     await deleteImage(formData.image.fileName);
                                 }
-                                await deleteDoc(doc(db, "patrimonios", docId));
+                                const response = await supabase
+                                    .from('patrimonios')
+                                    .delete()
+                                    .eq('id', docId)
+
+                                if (response.error) {
+                                    throw response.error;
+                                }
                                 Alert.alert("Sucesso", "Patrimônio deletado.");
                                 router.back();
                             } catch (error) {
