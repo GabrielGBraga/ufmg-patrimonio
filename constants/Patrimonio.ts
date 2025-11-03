@@ -23,7 +23,7 @@ export type Patrimonio = typeof patrimonio;
 
 export const labelPatrimonio = {
     image: {
-        url: '',
+        fileName: '',
         height: 0,
         width: 0,
     },

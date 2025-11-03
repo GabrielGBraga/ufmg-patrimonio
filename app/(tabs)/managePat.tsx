@@ -46,27 +46,38 @@ export default  function manegePat() {
     }, [formData?.atmNum])
     
     useEffect(() => {
-        if (formData?.image.fileName && formData?.image.fileName !== '') {
-            const { data } = supabase
-                .storage
-                .from('public-bucket')
-                .getPublicUrl('folder/avatar1.png')
-            setImage(data.publicUrl);
+    const getUrl = async () => {
+        if (formData?.image.fileName) {
+            const { data, error } = await supabase
+            .storage  
+            .from('images')  
+            .createSignedUrl(formData.image.fileName, 60)
+            if (error) return console.error("Error fetching image URL: ", error);
+            if (data?.signedUrl) {
+            setImage(data.signedUrl);
+            console.log("Image URL: ", data.signedUrl);
+            } else{
+            console.log("No signed URL returned");
+            }
         }
+        };
+
+        getUrl();
     }, [formData?.image.fileName]);
 
     useEffect(() => {
         if (mode === 'edit' && docId) {
             const fetchPatrimonioData = async () => {
-                const docRef = doc(db, 'patrimonios', docId);
+                
+                const { data, error } = await supabase
+                    .from('patrimonios')
+                    .select()
+                    .eq('id', docId)
+
                 try {
-                    const docSnap = await getDoc(docRef);
-                    if (docSnap.exists()) {
-                        const patrimonioData = docSnap.data() as Patrimonio;
+                    if (data && data.length > 0) {
+                        const patrimonioData = data[0] as Patrimonio;
                         setFormData(patrimonioData);
-                        if (patrimonioData.image && patrimonioData.image.fileName) {
-                            setImage(patrimonioData.image.fileName);
-                        }
                     } else {
                         Alert.alert("Erro", "Patrimônio não encontrado.");
                         router.back();
@@ -193,8 +204,6 @@ export default  function manegePat() {
         }
     };
 
-    // ✅ **LÓGICA DE SUBMISSÃO REATORADA**
-    // Esta função agora controla todo o fluxo de salvar os dados.
     const onSubmit = async () => {
         if (!formData || !(await user())) {
             return Alert.alert('Erro', 'Dados do formulário ou usuário não encontrados.');
@@ -257,7 +266,12 @@ export default  function manegePat() {
 
                 if (error) console.error('Erro ao adicionar patrimônio:', error);
             } else if (mode === "edit" && docId) {
-                await updateDoc(doc(db, "patrimonios", docId), { ...dataToSave });
+                const { error } = await supabase
+                    .from('patrimonios')
+                    .update(dataToSave)
+                    .eq('id', docId);
+                    
+                if (error) console.error('Erro ao atualizar patrimônio:', error);
             }
 
             if(true) Alert.alert('Sucesso', mode === "add" ? 'Patrimônio adicionado!' : 'Patrimônio atualizado!');
