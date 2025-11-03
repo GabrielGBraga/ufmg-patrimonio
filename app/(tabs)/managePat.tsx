@@ -1,7 +1,5 @@
 import {ActivityIndicator, Alert, Image, StyleSheet, View} from 'react-native';
 import React, { useEffect, useState } from 'react';
-import { db } from '@/FirebaseConfig';
-import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { ThemedView } from "@/components/ui/ThemedView";
 import { ThemedButton } from "@/components/ui/ThemedButton";

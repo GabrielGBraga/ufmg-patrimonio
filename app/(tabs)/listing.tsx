@@ -8,7 +8,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import React, { use, useEffect, useState } from "react";
-import { db } from "@/FirebaseConfig";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { getAuth, reload } from "firebase/auth";
 import { ThemedText } from "@/components/ui/ThemedText";
@@ -56,8 +55,6 @@ export default  function listing() {
     return (await supabase.auth.getUser()).data.user;
   }
   
-  const patrimonioCollection = collection(db, "patrimonios");
-
   useEffect(() => {
     if (isFocused && editado) {
       setPatrimonioList([]);
