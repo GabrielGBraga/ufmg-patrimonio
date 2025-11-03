@@ -199,7 +199,7 @@ export default  function listing() {
     <View style={styles.renderContainer}>
       <ThemedView style={styles.patrimonioContainer}>
         {/* Container para a imagem, se existir */}
-        {item.image.url !== "" && (
+        {item.image.fileName !== "" && (
           <View style={styles.imageContainer}>
             <Image
               source={{ uri: image }}
