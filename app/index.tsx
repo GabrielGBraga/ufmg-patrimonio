@@ -17,8 +17,8 @@ AppState.addEventListener('change', (state) => {
 })
 
 export default function Index() {
-    const [email, setEmail] = useState('ggb-13@ufmg.br');
-    const [password, setPassword] = useState('password');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false)
 
