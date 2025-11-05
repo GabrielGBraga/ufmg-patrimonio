@@ -1,11 +1,11 @@
 import {
   StyleSheet,
   FlatList,
-  Image,
   View,
   Alert,
   TouchableOpacity,
 } from "react-native";
+import { Image } from 'expo-image';
 import { SafeAreaView } from "react-native-safe-area-context";
 import React, { use, useEffect, useState } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
@@ -108,29 +108,36 @@ export default  function listing() {
     if ((await user()) && patNum !== "") {
       try {
 
-        console.log("In fetch: ", formatPatNum(patNum));
+        let fetchedData : any[];
         
         const { data, error } = await supabase
           .from('patrimonios')
           .select()
           .eq('patNum', formatPatNum(patNum))
 
-        if (error) {
+          
+        if (error) return console.error("Erro ao buscar patrimônio: ", error);
+
+        fetchedData = data;
+          
+        if (fetchedData.length === 0) {
           console.log("In error")
           const { data, error } = await supabase
             .from('patrimonios')
             .select()
-            .eq('atmNum', formatPatNum(patNum))
+            .eq('atmNum', formatAtmNum(patNum))
+
+            if (error) return console.error("Erro ao buscar patrimônio: ", error);
             
-          if (error) {
-            Alert.alert("Patrimônio não encontrado.");
-            console.error("Erro ao buscar patrimônio: ", error);
-            return;
+          fetchedData = data;
+
+          if (fetchedData.length === 0) {
+            return Alert.alert("Patrimônio não encontrado.");
           }
         }
 
-        if (data && data.length > 0) {
-          const { id, ...patrimonioData } = data[0];
+        if (fetchedData && fetchedData.length > 0) {
+          const { id, ...patrimonioData } = fetchedData[0];
           setDocId(id);
           setPatrimonioList([patrimonioData as Patrimonio]);
         }
@@ -173,6 +180,8 @@ export default  function listing() {
                 width: item.image.width,
                 resizeMode: 'contain',
               }}
+              contentFit="contain"
+              transition={300} // Fade-in effect
             />
           </View>
         )}
