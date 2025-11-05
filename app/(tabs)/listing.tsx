@@ -134,38 +134,6 @@ export default  function listing() {
           setDocId(id);
           setPatrimonioList([patrimonioData as Patrimonio]);
         }
-
-        // const dataParced = data ? JSON.parse(data[0]) : null;
-
-          // if(data) {
-          //   data.forEach((doc) => {
-          //     setDocId(doc.id);
-          //   });
-          //   setPatrimonioList((prevPatrimonio) => {
-          //     // 3. IMPORTANTE: Criamos um *novo* objeto copiando o estado anterior.
-          //     const newPatrimonio = { ...prevPatrimonio };
-
-          //     // 4. Esta é a sua lógica, operando em 'newPatrimonio' (a cópia).
-          //     // Pegamos as chaves do nosso objeto de estado.
-          //     (Object.keys(newPatrimonio) as (keyof Patrimonio)[]).forEach((key) => {
-          //       // 5. Verificamos se a chave (ex: "patNum") existe no 'dataSource'.
-          //       // A propriedade 'id' do 'dataSource' é automaticamente ignorada
-          //       // porque 'id' não é uma chave em 'newPatrimonio'.
-          //       if (key in data) {
-          //         // Se existir, atualizamos a propriedade no *nosso novo* objeto.
-          //         // Estamos confiando que as estruturas são compatíveis.
-          //         newPatrimonio[key] = data[key];
-          //       }
-          //     });
-
-          //     console.log("New patrimonio constructed: ", newPatrimonio);
-
-          //     // 6. Finalmente, retornamos o 'newPatrimonio'.
-          //     // O React verá que é um novo objeto e irá re-renderizar o componente.
-          //     return newPatrimonio;
-          //   });
-          //   setPatNum("");
-          // }
       } catch (error) {
         console.error("Erro ao buscar patrimônios: ", error);
       }

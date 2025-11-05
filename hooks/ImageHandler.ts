@@ -1,8 +1,8 @@
 import * as ImagePicker from 'expo-image-picker';
 import {Alert} from "react-native";
 import {getDownloadURL, ref, StorageReference, uploadBytes, deleteObject} from "firebase/storage";
-import {storage} from "@/FirebaseConfig";
 import { supabase } from '@/utils/supabase';
+import * as ImageManipulator from 'expo-image-manipulator';
 
 type imageData = {
     uri: string;
@@ -58,7 +58,19 @@ export const getImage = async (selectionType: 'Camera'|'Gallery'): Promise<image
                     newWidth = maxHeight * aspectRatio;
                 }
             }
-            return { uri, width: newWidth, height: newHeight };
+
+            const manipulatorResult = await ImageManipulator.manipulateAsync(
+                uri,
+                [
+                    { resize: { width: 1024 } } // Resize to max width of 1024px
+                ],
+                {
+                    compress: 0.7, // 70% quality
+                    format: ImageManipulator.SaveFormat.JPEG,
+                }
+            );
+
+            return { uri: manipulatorResult.uri, width: newWidth, height: newHeight };
         }
     
         return undefined; // Retorna undefined caso não haja imagem ou se o usuário cancelar
