@@ -1,5 +1,4 @@
 import { StyleSheet } from 'react-native';
-import { auth } from '@/FirebaseConfig';
 import { router } from 'expo-router';
 import { ThemedView } from "@/components/ui/ThemedView";
 import { ThemedText } from "@/components/ui/ThemedText";

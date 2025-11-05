@@ -14,6 +14,7 @@ import { useForm } from 'react-hook-form';
 import CameraScreen from '@/components/ui/CameraScreen';
 import { formatAtmNum, formatPatNum } from '@/hooks/formating';
 import { supabase } from '@/utils/supabase';
+import { connectStorageEmulator } from 'firebase/storage';
 
 export default  function manegePat() {
     
@@ -107,28 +108,50 @@ export default  function manegePat() {
         setImageCancel(true);
     };
 
-    // const checkExistingPat = async (patNum: string, atmNum: string) => {
-    //     if (!(await user())) return false;
+const checkExistingPat = async (patNum: string, atmNum: string): Promise<string | null | false> => {
+    if (!(await user())) return false;
 
-    //     try {
-    //         const q = query(collection(db, "patrimonios"), where("patNum", "==", patNum));
-    //         let search = await getDocs(q);
-    //         if (search.empty || patNum === '') {
-    //             const q = query(collection(db, "patrimonios"), where("atmNum", "==", atmNum));
-    //             search = await getDocs(q);
-    //             if (search.empty || atmNum === '') {
-    //                 return false;
-    //             }else{
-    //                 return true;
-    //             }
-    //         } else{
-    //             return true;
-    //         }
-    //     } catch (error) {
-    //         console.error("Erro ao buscar patrimônios: ", error);
-    //         return false;
-    //     }
-    // }
+    try {
+        const { data, error } = await supabase
+            .from('patrimonios')
+            .select('patNum, atmNum') // 1. Select only the columns we need
+            .or(`patNum.eq.${patNum},atmNum.eq.${atmNum}`); // Your original query is correct
+
+        console.log("Query result data: ", data);
+        // 2. Handle database errors
+        if (error) {
+            console.error("Erro ao buscar patrimônios: ", error);
+            return false;
+        }
+
+        // 3. Handle case where no records are found
+        if (!data || data.length === 0) {
+            return null; // No match found
+        }
+
+        // 4. Check the results to see which input(s) matched
+        // We check all returned rows in case one row matches patNum and another matches atmNum
+        const patNumExists = data.some(item => item.patNum === patNum) && patNum !== '';
+        const atmNumExists = data.some(item => item.atmNum === atmNum) && atmNum !== '';
+
+        // 5. Return the specific result
+        if (patNumExists && atmNumExists) {
+
+            return "both";
+        } else if (patNumExists) {
+            return "patNum";
+        } else if (atmNumExists) {
+            return "atmNum";
+        }
+
+        // This line should be unreachable if the query is correct, but acts as a fallback.
+        return null;
+
+    } catch (error) {
+        console.error("Erro ao buscar patrimônios: ", error);
+        return false;
+    }
+}
 
     const inputs = formData ? [
         { label: 'Número de Patrimônio', placeholder: 'Digite o número de patrimônio', key: 'patNum' },
@@ -222,9 +245,6 @@ export default  function manegePat() {
         if (!image){
             return Alert.alert('Erro', 'Adicione uma imagem do patrimônio.');
         }
-        // if (await checkExistingPat(formData.patNum, formData.atmNum) && mode === 'add') {
-        //     return Alert.alert('Erro', 'Número de patrimônio ou ATM já existe.');
-        // }
 
         let patFormat = formatPatNum(formData.patNum);
 
@@ -237,6 +257,22 @@ export default  function manegePat() {
         if (atmFormat == '' && formData.atmNum != '') {
             return Alert.alert('Erro', 'O número ATM inserido é inválido.');
         }
+
+        if (mode === 'add') {
+            const result = await checkExistingPat(patFormat, atmFormat);
+            
+            if (result === "both") {
+                return Alert.alert("Esse patrimonio já foi cadastrado.");
+            } else if (result === "patNum") {
+                return Alert.alert("Esse número de patrimônio já foi cadastrado.");
+            } else if (result === "atmNum") {
+                return Alert.alert("Esse número ATM já foi cadastrado.");
+            } else if (result === null) {
+            } else {
+                return Alert.alert("An error occurred during the check.");
+            }
+        }
+
 
         setLoading(true);
 
