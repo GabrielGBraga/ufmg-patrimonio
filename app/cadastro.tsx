@@ -5,12 +5,14 @@ import { ThemedButton } from '@/components/ui/ThemedButton';
 import { ThemedTextInput } from "@/components/ui/ThemedTextInput";
 import { StyleSheet, Alert } from 'react-native';
 import { router } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/utils/supabase';
 
 export default function Cadastro () {
+    const params = useLocalSearchParams();
 
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const [email, setEmail] = useState(params.email ? String(params.email) : '');
+    const [password, setPassword] = useState(params.password ? String(params.password) : '');
     const [showPassword, setShowPassword] = useState(false);
     const [nome, setNome] = useState('');
     const [loading, setLoading] = useState(false);
