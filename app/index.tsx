@@ -2,6 +2,7 @@ import {StyleSheet, Alert, AppState} from 'react-native';
 import { SafeAreaView } from "react-native-safe-area-context";
 import React, {useState} from 'react';
 import { router } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { ThemedButton } from '@/components/ui/ThemedButton';
 import { ThemedTextInput } from "@/components/ui/ThemedTextInput";
@@ -22,6 +23,18 @@ export default function Index() {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false)
 
+    // Reset variables when screen comes into focus
+    useFocusEffect(
+        React.useCallback(() => {
+            setEmail('');
+            setPassword('');
+            setShowPassword(false);
+            return () => {
+                // Cleanup if needed
+            };
+        }, [])
+    );
+
     const signInWithEmail = async () => {    
         setLoading(true)    
 
@@ -30,10 +43,10 @@ export default function Index() {
                 email: email,      
                 password: password,    
             })
-            if (error) console.error("Error signing in: ", error.message )
-            else Alert.alert('Successfully signed in!')
+            if (error) return Alert.alert('Email ou senha incorretos.')
+            else Alert.alert('Logado com sucesso!')
         } catch (error) {
-            Alert.alert('Error logging in')
+            Alert.alert('Erro durante o login.')
             console.error("Logging error: ", error);
         }
         setLoading(false)
@@ -41,9 +54,13 @@ export default function Index() {
     }
 
     const navigateToSignUp = () => {
-        setEmail('');
-        setPassword('');
-        router.push('/cadastro')
+        router.push({
+            pathname: '/cadastro',
+            params: { 
+                email: email,
+                password: password
+            }
+        });
     };
 
     return (
