@@ -1,4 +1,4 @@
-import {ActivityIndicator, Alert, Image, StyleSheet, View} from 'react-native';
+import {ActivityIndicator, Alert, Image, StyleSheet, View, KeyboardAvoidingView, Platform} from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { ThemedView } from "@/components/ui/ThemedView";
@@ -354,51 +354,56 @@ const checkExistingPat = async (patNum: string, atmNum: string): Promise<string 
 
     return (
         <ThemedView style={styles.container}>
-            <ScrollableAreaView>
-                <ThemedHeader title={title} arrowBack={() => {router.back()}}/>
+            <KeyboardAvoidingView 
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={{ flex: 1 }}
+            >
+                <ScrollableAreaView>
+                    <ThemedHeader title={title} arrowBack={() => {router.back()}}/>
 
-                {!image ? (
-                    <ThemedView style={{flexDirection: 'row'}}>
-                        <ThemedButton style={styles.imageButton} onPress={() => handleSelectImage('Gallery')}>
-                            <ThemedText style={styles.buttonText}>Escolher Imagem</ThemedText>
-                        </ThemedButton>
-                        <ThemedButton style={styles.imageButton} onPress={() => handleSelectImage('Camera')}>
-                            <ThemedText style={styles.buttonText}>Tirar Foto</ThemedText>
-                        </ThemedButton>
-                    </ThemedView>
-                ) : (
-                    <ThemedView style={styles.imageContainer}>
-                        <Image
-                            source={{ uri: image }}
-                            style={[styles.image, {
-                                width: formData.image?.width || 200,
-                                height: formData.image?.height || 200,
+                    {!image ? (
+                        <ThemedView style={{flexDirection: 'row'}}>
+                            <ThemedButton style={styles.imageButton} onPress={() => handleSelectImage('Gallery')}>
+                                <ThemedText style={styles.buttonText}>Escolher Imagem</ThemedText>
+                            </ThemedButton>
+                            <ThemedButton style={styles.imageButton} onPress={() => handleSelectImage('Camera')}>
+                                <ThemedText style={styles.buttonText}>Tirar Foto</ThemedText>
+                            </ThemedButton>
+                        </ThemedView>
+                    ) : (
+                        <ThemedView style={styles.imageContainer}>
+                            <Image
+                                source={{ uri: image }}
+                                style={[styles.image, {
+                                    width: formData.image?.width || 200,
+                                    height: formData.image?.height || 200,
                             }]}
-                        />
-                        <ThemedButton style={styles.button} onPress={resetImage}>
-                            <ThemedText style={styles.buttonText}>Remover Imagem</ThemedText>
-                        </ThemedButton>
-                    </ThemedView>
-                )}
-                
-                <ThemedButton onPress={() => setScanBool(true)}>
-                    <ThemedText style={styles.buttonText}>Escanear Código de Barras</ThemedText>
-                </ThemedButton>
-
-                <TextInputGroup inputs={inputs} control={control} errors={errors} />
-                <CheckboxGroup selectedCheckbox={formData.conservacao} onCheckboxChange={handleCheckboxChange} />
-
-                {mode === "edit" && (
-                    <ThemedButton style={styles.deleteButton} onPress={deletePatrimonio}>
-                        <ThemedText style={styles.buttonText}>Deletar</ThemedText>
+                            />
+                            <ThemedButton style={styles.button} onPress={resetImage}>
+                                <ThemedText style={styles.buttonText}>Remover Imagem</ThemedText>
+                            </ThemedButton>
+                        </ThemedView>
+                    )}
+                    
+                    <ThemedButton onPress={() => setScanBool(true)}>
+                        <ThemedText style={styles.buttonText}>Escanear Código de Barras</ThemedText>
                     </ThemedButton>
-                )}
 
-                <ThemedButton style={styles.button} onPress={handleSubmit(onSubmit)}>
-                    <ThemedText style={styles.buttonText}>{finalButtonText}</ThemedText>
-                </ThemedButton>
+                    <TextInputGroup inputs={inputs} control={control} errors={errors} />
+                    <CheckboxGroup selectedCheckbox={formData.conservacao} onCheckboxChange={handleCheckboxChange} />
 
-            </ScrollableAreaView>
+                    {mode === "edit" && (
+                        <ThemedButton style={styles.deleteButton} onPress={deletePatrimonio}>
+                            <ThemedText style={styles.buttonText}>Deletar</ThemedText>
+                        </ThemedButton>
+                    )}
+
+                    <ThemedButton style={styles.button} onPress={handleSubmit(onSubmit)}>
+                        <ThemedText style={styles.buttonText}>{finalButtonText}</ThemedText>
+                    </ThemedButton>
+
+                </ScrollableAreaView>
+            </KeyboardAvoidingView>
         </ThemedView>
     );
 }
