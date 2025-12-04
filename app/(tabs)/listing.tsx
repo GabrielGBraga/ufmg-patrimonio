@@ -7,18 +7,13 @@ import {
 } from "react-native";
 import { Image } from 'expo-image';
 import { SafeAreaView } from "react-native-safe-area-context";
-import React, { use, useEffect, useState } from "react";
-import { collection, getDocs, query, where } from "firebase/firestore";
-import { getAuth, reload } from "firebase/auth";
+import React, { useEffect, useState } from "react";
 import { ThemedText } from "@/components/ui/ThemedText";
 import { ThemedTextInput } from "@/components/ui/ThemedTextInput";
 import { ThemedView } from "@/components/ui/ThemedView";
 import { ThemedButton } from "@/components/ui/ThemedButton";
 import { labelPatrimonio, patrimonio, Patrimonio } from "@/constants/Patrimonio";
 import {
-  CameraView,
-  CameraType,
-  useCameraPermissions,
   Camera,
 } from "expo-camera";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -26,16 +21,14 @@ import { ThemedHeader } from "@/components/ui/ThemedHeader";
 import { router } from "expo-router";
 import { useIsFocused } from "@react-navigation/native";
 import CameraScreen from "@/components/ui/CameraScreen";
-import { ScrollableAreaView } from "@/components/layout/ScrollableAreaView";
-import { formatAtmNum, formatInputForSearch, formatPatNum } from "@/hooks/formating";
+import { formatAtmNum, formatPatNum } from "@/hooks/formating";
 import { supabase } from "@/utils/supabase";
-import { get } from "react-native/Libraries/TurboModule/TurboModuleRegistry";
 
 /**
  * Este componente renderiza uma tela para pesquisar e exibir patrimônios pelo número.
  * Ele inclui um campo de busca, um botão e uma lista de patrimônios buscados no Firestore.
  */
-export default  function listing() {
+export default function listing() {
   // Estado para armazenar o número do patrimônio a ser pesquisado
   const [patNum, setPatNum] = useState("");
   // Estado para armazenar a lista de patrimônios buscados
@@ -56,11 +49,14 @@ export default  function listing() {
   }
   
   useEffect(() => {
+    // Se a tela ganhar foco e tiver sido editada, limpa a lista para evitar dados obsoletos
     if (isFocused && editado) {
       setPatrimonioList([]);
+      setEditado(false); // Reseta o estado de editado
     }
     if(!scanBool){
-      setPatrimonioList([]);
+      // Opcional: manter a lista se quiser que o usuário veja o resultado ao voltar do scan
+      // setPatrimonioList([]); 
     }
   }, [isFocused]);
 
@@ -110,6 +106,7 @@ export default  function listing() {
 
         let fetchedData : any[];
         
+        // Tenta buscar pelo patNum
         const { data, error } = await supabase
           .from('patrimonios')
           .select()
@@ -120,8 +117,9 @@ export default  function listing() {
 
         fetchedData = data;
           
+        // Se não achou, tenta pelo atmNum
         if (fetchedData.length === 0) {
-          console.log("In error")
+          console.log("Tentando buscar por ATM")
           const { data, error } = await supabase
             .from('patrimonios')
             .select()
@@ -151,18 +149,20 @@ export default  function listing() {
     }
   };
 
+  // --- MUDANÇA PRINCIPAL AQUI ---
   const editPat = () => {
+    // Redireciona para o MODAL configurado no _layout da raiz
     router.push({
-      pathname: "/managePat",
+      pathname: "/modalManagePat", 
       params: {
         mode: "edit",
-        patrimonioId: docId, // Enviamos apenas o ID, que já é uma string.
+        id: docId, // Passamos 'id' para ser consistente com o componente
       },
     });
-    setEditado(true);
+    setEditado(true); // Marca como editado para atualizar a lista ao voltar
   };
 
-/**
+  /**
    * Renderiza um item individual de patrimônio.
    * Cada par de rótulo-dado é uma linha com alinhamento vertical e horizontal garantido.
    * @param item - Dados do patrimônio a serem renderizados

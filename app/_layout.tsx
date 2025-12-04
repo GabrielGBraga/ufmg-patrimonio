@@ -53,6 +53,15 @@ function RootLayoutNav() {
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="cadastro" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        
+        {/* Nova Rota do Modal adicionada aqui */}
+        <Stack.Screen 
+          name="modalManagePat" 
+          options={{ 
+            presentation: 'modal', // Faz a animação de subir a tela
+            headerShown: false     // Oculta o header padrão pois você usa o ThemedHeader
+          }} 
+        />
       </Stack>
     </ThemeProvider>
   );
