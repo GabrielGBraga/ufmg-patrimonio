@@ -7,39 +7,59 @@ export type ThemedHeaderProps = TextProps & {
   lightColor?: string;
   darkColor?: string;
   title: string;
-  arrowBack: () => void;
+  onPressIcon: () => void;
+  variant?: 'back' | 'settings'; // Nova prop para escolher o ícone
 };
 
 export function ThemedHeader({ 
   style, 
   lightColor, 
   darkColor, 
-  arrowBack, 
+  onPressIcon, 
   title = "My Title", 
+  variant = 'settings', // Valor padrão é 'back' se você não passar nada
   ...otherProps 
 }: ThemedHeaderProps) {
   const backgroundColor = useThemeColor({ light: lightColor, dark: darkColor }, 'background');
   const textColor = useThemeColor({}, 'text');
 
+  // Decide qual ícone mostrar baseado na prop 'variant'
+  const iconName = variant === 'settings' ? 'settings-outline' : 'arrow-back';
+
   return (
     <View 
       style={{
         flexDirection: "row",
-        alignItems: "center", // Centraliza verticalmente
-        paddingHorizontal: 16, // padding proporcional
+        alignItems: "center", 
+        justifyContent: "center", // Centraliza o título
         paddingVertical: 12,
-        backgroundColor
+        backgroundColor,
+        position: 'relative',
+        minHeight: 48 
       }}
     >
-      {/* Go Back Icon */}
-      <TouchableOpacity onPress={arrowBack} style={{ marginRight: 12 }}>
-        <Ionicons name="arrow-back" size={24} color={textColor} />
+      {/* Botão Esquerdo (Absoluto) */}
+      <TouchableOpacity 
+        onPress={onPressIcon} 
+        style={{ 
+          position: 'absolute', 
+          left: 35, 
+          zIndex: 1, 
+          padding: 4,
+        }}
+      >
+        <Ionicons name={iconName} size={30} color={textColor} />
       </TouchableOpacity>
 
+      {/* Título Centralizado */}
       <ThemedText
         type='title'
         style={[
-          { flexShrink: 1, flexWrap: 'wrap', color: textColor },
+          { 
+            textAlign: 'center', 
+            color: textColor,
+            paddingHorizontal: 48 
+          },
           style
         ]}
         {...otherProps}

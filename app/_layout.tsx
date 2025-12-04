@@ -62,6 +62,13 @@ function RootLayoutNav() {
             headerShown: false     // Oculta o header padrão pois você usa o ThemedHeader
           }} 
         />
+        <Stack.Screen 
+          name="settings" 
+          options={{ 
+            presentation: 'modal',
+            headerShown: false 
+          }} 
+        />
       </Stack>
     </ThemeProvider>
   );

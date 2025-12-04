@@ -24,6 +24,9 @@ export default function ManagePatScreenContent() {
     const docId = params.id as string || params.patrimonioId as string; // Aceita 'id' ou 'patrimonioId' para flexibilidade
 
     const title = mode === "edit" ? 'Editar Patrimônio' : "Adicionar Patrimônio";
+    const headerIcon = mode === "edit" ? 'back' : 'settings';
+    const headerFunc = mode === "edit" ? () => {router.back()} : () => router.push('/settings');
+
     const finalButtonText = mode === "edit" ? 'Atualizar' : "Adicionar";
 
     const user = async () => {
@@ -313,9 +316,9 @@ export default function ManagePatScreenContent() {
                 router.back();
             } else {
                // Se estiver na tab e não der pra voltar, resetamos o form visualmente apenas (opcional)
-               setFormData(patrimonio);
-               setImage(null);
-               setLoading(false);
+                setFormData(patrimonio);
+                setImage(null);
+                setLoading(false);
             }
 
         } catch (error) {
@@ -339,7 +342,7 @@ export default function ManagePatScreenContent() {
     if (scanBool) {
         return (
             <View style={styles.container}>
-                <ThemedHeader title="Escanear Patrimônio" arrowBack={() => setScanBool(false)} />
+                <ThemedHeader title="Escanear Patrimônio" onPressIcon={() => setScanBool(false)} />
                 <CameraScreen
                     onBarcodeScanned={({ data }) => {
                         setValue('Número de Patrimônio', data);
@@ -358,7 +361,7 @@ export default function ManagePatScreenContent() {
                 style={{ flex: 1 }}
             >
                 <ScrollableAreaView>
-                    <ThemedHeader title={title} arrowBack={() => { router.back() }} />
+                    <ThemedHeader title={title} onPressIcon={headerFunc} variant={headerIcon}/>
 
                     {!image ? (
                         <ThemedView style={{ flexDirection: 'row' }}>

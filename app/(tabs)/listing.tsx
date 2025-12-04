@@ -226,7 +226,7 @@ export default function listing() {
     <SafeAreaView style={styles.safeArea}>
       
       {/* Header da página */}
-      <ThemedHeader title="Escanear Patrimonio" arrowBack={() => {setScanBool(false)}}/>
+      <ThemedHeader title="Escanear Patrimonio" onPressIcon={() => {setScanBool(false)}} variant="back"/>
       
       <CameraScreen
         onBarcodeScanned={({ type, data }) => {
@@ -241,7 +241,7 @@ export default function listing() {
 
       <ThemedView style={styles.safeArea}>
         {/* Header da página */}
-        <ThemedHeader title="Pesquisar Patrimonio" arrowBack={() => {router.back()}}/>
+        <ThemedHeader title="Pesquisar Patrimonio" onPressIcon={() => router.push('/settings')}/>
 
         {/* Input do número de patrimonio */}
         <ThemedView style={styles.row}>
