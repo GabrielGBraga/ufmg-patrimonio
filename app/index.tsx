@@ -1,6 +1,6 @@
-import {StyleSheet, Alert, AppState} from 'react-native';
+import { StyleSheet, Alert, AppState, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { SafeAreaView } from "react-native-safe-area-context";
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import { router } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { ThemedText } from '@/components/ui/ThemedText';
@@ -9,11 +9,11 @@ import { ThemedTextInput } from "@/components/ui/ThemedTextInput";
 import { ThemedView } from '@/components/ui/ThemedView';
 import { supabase } from '../utils/supabase';
 
-AppState.addEventListener('change', (state) => {  
-    if (state === 'active') {    
-        supabase.auth.startAutoRefresh()  
-    } else {    
-        supabase.auth.stopAutoRefresh()  
+AppState.addEventListener('change', (state) => {
+    if (state === 'active') {
+        supabase.auth.startAutoRefresh()
+    } else {
+        supabase.auth.stopAutoRefresh()
     }
 })
 
@@ -35,13 +35,13 @@ export default function Index() {
         }, [])
     );
 
-    const signInWithEmail = async () => {    
-        setLoading(true)    
+    const signInWithEmail = async () => {
+        setLoading(true)
 
         try {
-            const { error } = await supabase.auth.signInWithPassword({      
-                email: email,      
-                password: password,    
+            const { error } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password,
             })
             if (error) return Alert.alert('Email ou senha incorretos.')
             else Alert.alert('Logado com sucesso!')
@@ -56,7 +56,7 @@ export default function Index() {
     const navigateToSignUp = () => {
         router.push({
             pathname: '/cadastro',
-            params: { 
+            params: {
                 email: email,
                 password: password
             }
@@ -65,38 +65,50 @@ export default function Index() {
 
     return (
         <SafeAreaView style={styles.safeView}>
-            <ThemedView style={styles.container}>
-                <ThemedText type="title">Entrar</ThemedText>
-                <ThemedTextInput
-                    style={styles.textInput}
-                    placeholder="Email"
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                />
-                <ThemedTextInput
-                    style={styles.textInput}
-                    placeholder="Senha"
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry={!showPassword}
-                    iconName={showPassword ? "eye-off" : "eye"}
-                    onIconPress={() => setShowPassword(!showPassword)}
-                />
-                <ThemedButton style={styles.button} onPress={() => signInWithEmail()}>
-                    <ThemedText style={styles.text}>Entrar</ThemedText>
-                </ThemedButton>
-                <ThemedButton style={styles.button} onPress={navigateToSignUp}>
-                    <ThemedText style={styles.text}>Cadastrar</ThemedText>
-                </ThemedButton>
-            </ThemedView>
+            {/* 1. KeyboardAvoidingView empurra o conteúdo para cima */}
+            <KeyboardAvoidingView 
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                style={styles.keyboardAvoidingView}
+            >
+                {/* 2. TouchableWithoutFeedback fecha o teclado ao clicar fora */}
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                    <ThemedView style={styles.container}>
+                        <ThemedText type="title">Entrar</ThemedText>
+                        <ThemedTextInput
+                            style={styles.textInput}
+                            placeholder="Email"
+                            value={email}
+                            onChangeText={setEmail}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                        />
+                        <ThemedTextInput
+                            style={styles.textInput}
+                            placeholder="Senha"
+                            value={password}
+                            onChangeText={setPassword}
+                            secureTextEntry={!showPassword}
+                            iconName={showPassword ? "eye-off" : "eye"}
+                            onIconPress={() => setShowPassword(!showPassword)}
+                        />
+                        <ThemedButton style={styles.button} onPress={() => signInWithEmail()}>
+                            <ThemedText style={styles.text}>Entrar</ThemedText>
+                        </ThemedButton>
+                        <ThemedButton style={styles.button} onPress={navigateToSignUp}>
+                            <ThemedText style={styles.text}>Cadastrar</ThemedText>
+                        </ThemedButton>
+                    </ThemedView>
+                </TouchableWithoutFeedback>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    safeView:{
+    safeView: {
+        flex: 1
+    },
+    keyboardAvoidingView: {
         flex: 1
     },
     container: {
