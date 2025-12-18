@@ -1,16 +1,17 @@
-import { ViewProps, ScrollView, ScrollViewProps, SafeAreaView, StyleSheet } from 'react-native';
+import { ViewProps, ScrollView, ScrollViewProps, StyleSheet } from 'react-native';
+import { ThemedView } from '../ui/ThemedView';
 
 export type ScrollableAreaViewProps = ViewProps & ScrollViewProps;
 
 export function ScrollableAreaView({ style, contentContainerStyle, ...otherProps }: ScrollableAreaViewProps) {
   return (
-    <SafeAreaView style={[styles.safeArea, style]}>
+    <ThemedView style={[styles.safeArea, style]}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={contentContainerStyle}
         {...otherProps}
       />
-    </SafeAreaView>
+    </ThemedView>
   );
 }
 

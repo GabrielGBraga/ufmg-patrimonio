@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { Image } from 'expo-image';
-import { SafeAreaView } from "react-native-safe-area-context"; // Import mantido
 import React, { useEffect, useState } from "react";
 import { ThemedText } from "@/components/ui/ThemedText";
 import { ThemedTextInput } from "@/components/ui/ThemedTextInput";
@@ -186,7 +185,7 @@ export default function listing() {
 
   return scanBool ? (
     // Quando está na câmera, geralmente queremos a SafeArea total ou controlada pelo header
-    <SafeAreaView style={styles.safeArea}>
+    <ThemedView style={styles.safeArea}>
       <ThemedHeader title="Escanear Patrimonio" onPressIcon={() => {setScanBool(false)}} variant="back"/>
       <CameraScreen
         onBarcodeScanned={({ type, data }) => {
@@ -195,12 +194,12 @@ export default function listing() {
           setScanBool(false)
         }}
       />
-    </SafeAreaView>
+    </ThemedView>
   ) : (
     // AQUI ESTÁ A CORREÇÃO PRINCIPAL
     // Adicionei edges={['top', 'left', 'right']}
     // Isso remove o padding inferior, permitindo que a view encoste na Tab Bar
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+    <ThemedView style={styles.safeArea}>
       <ThemedView style={styles.safeArea}>
         <ThemedHeader title="Pesquisar Patrimonio" onPressIcon={() => router.push('/settings')}/>
 
@@ -232,7 +231,7 @@ export default function listing() {
           contentContainerStyle={styles.listContainer}
         />
       </ThemedView>
-    </SafeAreaView>
+    </ThemedView>
   );
 }
 

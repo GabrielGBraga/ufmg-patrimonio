@@ -1,6 +1,5 @@
 import { StyleSheet, Alert, AppState, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
-import { SafeAreaView } from "react-native-safe-area-context";
-import React, { useState } from 'react';
+import React, { use, useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { ThemedText } from '@/components/ui/ThemedText';
@@ -8,6 +7,7 @@ import { ThemedButton } from '@/components/ui/ThemedButton';
 import { ThemedTextInput } from "@/components/ui/ThemedTextInput";
 import { ThemedView } from '@/components/ui/ThemedView';
 import { supabase } from '../utils/supabase';
+import { checkServerStatus } from '@/hooks/checkConnection';
 
 AppState.addEventListener('change', (state) => {
     if (state === 'active') {
@@ -22,6 +22,17 @@ export default function Index() {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false)
+    const [connection, setConnection] = useState(true);
+
+    useEffect(() => {
+        const checkConnection = async () => {
+            const isConnected = await checkServerStatus();
+            setConnection(isConnected);
+        };
+
+        checkConnection();
+    }, [])
+    
 
     // Reset variables when screen comes into focus
     useFocusEffect(
@@ -43,7 +54,7 @@ export default function Index() {
                 email: email,
                 password: password,
             })
-            if (error) return Alert.alert('Email ou senha incorretos.')
+            if (error) return Alert.alert('Email ou senha incorretos.', error.message)
             else Alert.alert('Logado com sucesso!')
         } catch (error) {
             Alert.alert('Erro durante o login.')
@@ -63,8 +74,32 @@ export default function Index() {
         });
     };
 
-    return (
-        <SafeAreaView style={styles.safeView}>
+    return !connection ? (
+        <ThemedView style={styles.safeView}>
+            <ThemedView style={styles.container}>
+                <ThemedText type="title">Erro de conexão</ThemedText>
+                <ThemedText style={{ textAlign: 'center', marginHorizontal: 20, marginTop: 10 }}>
+                    Não foi possível conectar ao servidor. Verifique sua conexão com a internet e tente novamente.
+                </ThemedText>
+
+                <ThemedButton
+                    style={styles.button}
+                    onPress={async () => {
+                        setLoading(true);
+                        const isConnected = await checkServerStatus();
+                        setConnection(isConnected);
+                        setLoading(false);
+                        if (!isConnected) {
+                            Alert.alert('Ainda sem conexão', 'Tente novamente mais tarde.');
+                        }
+                    }}
+                >
+                    <ThemedText style={styles.text}>{loading ? 'Verificando...' : 'Tentar novamente'}</ThemedText>
+                </ThemedButton>
+            </ThemedView>
+        </ThemedView>
+    ) : (
+        <ThemedView style={styles.safeView}>
             {/* 1. KeyboardAvoidingView empurra o conteúdo para cima */}
             <KeyboardAvoidingView 
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -97,10 +132,11 @@ export default function Index() {
                         <ThemedButton style={styles.button} onPress={navigateToSignUp}>
                             <ThemedText style={styles.text}>Cadastrar</ThemedText>
                         </ThemedButton>
+
                     </ThemedView>
                 </TouchableWithoutFeedback>
             </KeyboardAvoidingView>
-        </SafeAreaView>
+        </ThemedView>
     );
 };
 
