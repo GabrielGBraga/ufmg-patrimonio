@@ -5,16 +5,18 @@ import {
   Alert,
   TouchableOpacity,
 } from "react-native";
-import { Image } from 'expo-image';
+import { Image } from "expo-image";
 import React, { useEffect, useState } from "react";
 import { ThemedText } from "@/components/ui/ThemedText";
 import { ThemedTextInput } from "@/components/ui/ThemedTextInput";
 import { ThemedView } from "@/components/ui/ThemedView";
 import { ThemedButton } from "@/components/ui/ThemedButton";
-import { labelPatrimonio, patrimonio, Patrimonio } from "@/constants/Patrimonio";
 import {
-  Camera,
-} from "expo-camera";
+  labelPatrimonio,
+  patrimonio,
+  Patrimonio,
+} from "@/constants/Patrimonio";
+import { Camera } from "expo-camera";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { ThemedHeader } from "@/components/ui/ThemedHeader";
 import { router } from "expo-router";
@@ -22,6 +24,13 @@ import { useIsFocused } from "@react-navigation/native";
 import CameraScreen from "@/components/ui/CameraScreen";
 import { formatAtmNum, formatPatNum } from "@/hooks/formating";
 import { supabase } from "@/utils/supabase";
+import { ThemedDropdown } from "@/components/ui/ThemedDropdown";
+
+const data = [
+  { label: "Num Patrimônio", value: "patNum" },
+  { label: "Num ATM", value: "atmNum" },
+  { label: "Sala", value: "sala" },
+];
 
 export default function listing() {
   const [patNum, setPatNum] = useState("");
@@ -32,18 +41,19 @@ export default function listing() {
   const [image, setImage] = useState<any>();
   const isFocused = useIsFocused();
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [value, setValue] = useState<string>("patNum");
 
   const user = async () => {
     return (await supabase.auth.getUser()).data.user;
-  }
-  
+  };
+
   useEffect(() => {
     if (isFocused && editado) {
       setPatrimonioList([]);
-      setEditado(false); 
+      setEditado(false);
     }
-    if(!scanBool){
-       // Lógica opcional
+    if (!scanBool) {
+      // Lógica opcional
     }
   }, [isFocused]);
 
@@ -57,10 +67,9 @@ export default function listing() {
   useEffect(() => {
     const getUrl = async () => {
       if (patrimonioList[0]?.image.fileName) {
-        const { data, error } = await supabase
-          .storage  
-          .from('images')  
-          .createSignedUrl(patrimonioList[0].image.fileName, 60)
+        const { data, error } = await supabase.storage
+          .from("images")
+          .createSignedUrl(patrimonioList[0].image.fileName, 60);
         if (error) return console.error("Error fetching image URL: ", error);
         if (data?.signedUrl) {
           setImage(data.signedUrl);
@@ -73,7 +82,7 @@ export default function listing() {
   if (hasPermission === null) {
     return <ThemedText>Requesting camera permissions...</ThemedText>;
   }
-  
+
   if (hasPermission === false) {
     return <ThemedText>No access to camera</ThemedText>;
   }
@@ -81,24 +90,24 @@ export default function listing() {
   const fetchPatrimonio = async () => {
     if ((await user()) && patNum !== "") {
       try {
-        let fetchedData : any[];
-        
+        let fetchedData: any[];
+
         const { data, error } = await supabase
-          .from('patrimonios')
+          .from("patrimonios")
           .select()
-          .eq('patNum', formatPatNum(patNum))
-          
+          .eq("patNum", formatPatNum(patNum));
+
         if (error) return console.error("Erro ao buscar patrimônio: ", error);
         fetchedData = data;
-          
-        if (fetchedData.length === 0) {
-          console.log("Tentando buscar por ATM")
-          const { data, error } = await supabase
-            .from('patrimonios')
-            .select()
-            .eq('atmNum', formatAtmNum(patNum))
 
-            if (error) return console.error("Erro ao buscar patrimônio: ", error);
+        if (fetchedData.length === 0) {
+          console.log("Tentando buscar por ATM");
+          const { data, error } = await supabase
+            .from("patrimonios")
+            .select()
+            .eq("atmNum", formatAtmNum(patNum));
+
+          if (error) return console.error("Erro ao buscar patrimônio: ", error);
           fetchedData = data;
 
           if (fetchedData.length === 0) {
@@ -123,10 +132,10 @@ export default function listing() {
 
   const editPat = () => {
     router.push({
-      pathname: "/modalManagePat", 
+      pathname: "/modalManagePat",
       params: {
         mode: "edit",
-        id: docId, 
+        id: docId,
       },
     });
     setEditado(true);
@@ -142,16 +151,18 @@ export default function listing() {
               style={{
                 height: item.image.height,
                 width: item.image.width,
-                resizeMode: 'contain',
+                resizeMode: "contain",
               }}
               contentFit="contain"
-              transition={300} 
+              transition={300}
             />
           </View>
         )}
-        
+
         {Object.keys(patrimonio).map((key) =>
-          key !== "image" && key !== "lastEditedBy" && key !== "lastEditedAt" ? (
+          key !== "image" &&
+          key !== "lastEditedBy" &&
+          key !== "lastEditedAt" ? (
             <View style={styles.detailRow} key={key}>
               <View style={styles.labelContainer}>
                 <ThemedText style={styles.label}>
@@ -166,19 +177,20 @@ export default function listing() {
         )}
 
         <View style={styles.detailRow}>
-            <View style={styles.labelContainer}>
-                <ThemedText style={styles.label}>Última Edição:</ThemedText>
-            </View>
-            <View style={styles.dataContainer}>
-                <ThemedText style={styles.data}>{item.lastEditedBy} - {item.lastEditedAt}</ThemedText>
-            </View>
+          <View style={styles.labelContainer}>
+            <ThemedText style={styles.label}>Última Edição:</ThemedText>
+          </View>
+          <View style={styles.dataContainer}>
+            <ThemedText style={styles.data}>
+              {item.lastEditedBy} - {item.lastEditedAt}
+            </ThemedText>
+          </View>
         </View>
 
         <TouchableOpacity style={styles.editButton} onPress={() => editPat()}>
-            <Ionicons name="pencil" size={25} color="black" />
-            <ThemedText style={{marginLeft: 8}}>Editar</ThemedText>
+          <Ionicons name="pencil" size={25} color="black" />
+          <ThemedText style={{ marginLeft: 8 }}>Editar</ThemedText>
         </TouchableOpacity>
-
       </ThemedView>
     </View>
   );
@@ -186,18 +198,27 @@ export default function listing() {
   return scanBool ? (
     // Quando está na câmera, geralmente queremos a SafeArea total ou controlada pelo header
     <ThemedView style={styles.safeArea}>
-      <ThemedHeader title="Escanear Patrimonio" onPressIcon={() => {setScanBool(false)}} variant="back"/>
+      <ThemedHeader
+        title="Escanear Patrimonio"
+        onPressIcon={() => {
+          setScanBool(false);
+        }}
+        variant="back"
+      />
       <CameraScreen
         onBarcodeScanned={({ type, data }) => {
           setPatNum(data);
           console.log(`Scanned: ${type} - ${data}`);
-          setScanBool(false)
+          setScanBool(false);
         }}
       />
     </ThemedView>
   ) : (
     <ThemedView style={styles.safeArea}>
-      <ThemedHeader title="Pesquisar Patrimonio" onPressIcon={() => router.push('/settings')}/>
+      <ThemedHeader
+        title="Pesquisar Patrimonio"
+        onPressIcon={() => router.push("/settings")}
+      />
 
       <ThemedView style={styles.row}>
         <ThemedTextInput
@@ -207,9 +228,18 @@ export default function listing() {
           style={styles.input}
         />
 
-        <ThemedButton  onPress={fetchPatrimonio}>
+        <ThemedDropdown
+          data={data}
+          labelField="label"
+          valueField="value"
+          value={value}
+          onChange={(item) => setValue(item.value)}
+          placeholder="Choose an option"
+        />
+
+        <ThemedButton onPress={fetchPatrimonio}>
           <ThemedText type="defaultSemiBold">Pesquisar</ThemedText>
-        </ThemedButton>
+        </ThemedButton>+
       </ThemedView>
 
       <ThemedButton
@@ -279,22 +309,22 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   imageContainer: {
-    width: '100%',
-    alignItems: 'center',
+    width: "100%",
+    alignItems: "center",
     marginBottom: 15,
   },
   detailRow: {
-    flexDirection: 'row',
-    marginBottom: 10, 
-    width: '100%',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    marginBottom: 10,
+    width: "100%",
+    alignItems: "flex-start",
   },
   labelContainer: {
-    width: '35%', 
+    width: "35%",
     paddingRight: 10,
   },
   dataContainer: {
-    width: '65%', 
+    width: "65%",
   },
   label: {
     fontSize: 16,
@@ -304,14 +334,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   editButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     marginTop: 15,
     padding: 10,
-    backgroundColor: '#c7c7c7',
+    backgroundColor: "#c7c7c7",
     borderRadius: 8,
-    width: '100%',
+    width: "100%",
   },
   renderContainer: {
     flex: 1,

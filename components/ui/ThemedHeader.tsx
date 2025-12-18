@@ -17,7 +17,7 @@ export function ThemedHeader({
   darkColor, 
   onPressIcon, 
   title = "My Title", 
-  variant = 'settings', // Valor padrão é 'back' se você não passar nada
+  variant = 'settings',
   ...otherProps 
 }: ThemedHeaderProps) {
   const backgroundColor = useThemeColor({ light: lightColor, dark: darkColor }, 'background');
