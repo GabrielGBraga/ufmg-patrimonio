@@ -11,11 +11,9 @@ export const checkServerStatus = async () => {
             .select()
 
         if (error) {
-            console.log("Erro ao verificar status do servidor:", error);
             return false;
         }
 
-        console.log("Servidor online, dados recebidos:", data);
         return true;
     } catch (err) {
         // Se o zrok estiver fora, o supabase client vai lançar um erro de rede

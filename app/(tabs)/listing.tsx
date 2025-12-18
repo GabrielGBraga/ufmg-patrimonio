@@ -196,41 +196,36 @@ export default function listing() {
       />
     </ThemedView>
   ) : (
-    // AQUI ESTÁ A CORREÇÃO PRINCIPAL
-    // Adicionei edges={['top', 'left', 'right']}
-    // Isso remove o padding inferior, permitindo que a view encoste na Tab Bar
     <ThemedView style={styles.safeArea}>
-      <ThemedView style={styles.safeArea}>
-        <ThemedHeader title="Pesquisar Patrimonio" onPressIcon={() => router.push('/settings')}/>
+      <ThemedHeader title="Pesquisar Patrimonio" onPressIcon={() => router.push('/settings')}/>
 
-        <ThemedView style={styles.row}>
-          <ThemedTextInput
-            placeholder="Número do Patrimônio"
-            value={patNum}
-            onChangeText={(themedText) => setPatNum(themedText)}
-            style={styles.input}
-          />
-
-          <ThemedButton  onPress={fetchPatrimonio}>
-            <ThemedText type="defaultSemiBold">Pesquisar</ThemedText>
-          </ThemedButton>
-        </ThemedView>
-
-        <ThemedButton
-          onPress={() => {
-            setScanBool(true);
-          }}
-        >
-          <ThemedText type="defaultSemiBold">Escanear</ThemedText>
-        </ThemedButton>
-
-        <FlatList
-          data={patrimonioList}
-          renderItem={renderItem}
-          keyExtractor={(item) => docId}
-          contentContainerStyle={styles.listContainer}
+      <ThemedView style={styles.row}>
+        <ThemedTextInput
+          placeholder="Número do Patrimônio"
+          value={patNum}
+          onChangeText={(themedText) => setPatNum(themedText)}
+          style={styles.input}
         />
+
+        <ThemedButton  onPress={fetchPatrimonio}>
+          <ThemedText type="defaultSemiBold">Pesquisar</ThemedText>
+        </ThemedButton>
       </ThemedView>
+
+      <ThemedButton
+        onPress={() => {
+          setScanBool(true);
+        }}
+      >
+        <ThemedText type="defaultSemiBold">Escanear</ThemedText>
+      </ThemedButton>
+
+      <FlatList
+        data={patrimonioList}
+        renderItem={renderItem}
+        keyExtractor={(item) => docId}
+        contentContainerStyle={styles.listContainer}
+      />
     </ThemedView>
   );
 }
@@ -238,6 +233,7 @@ export default function listing() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    padding: 5,
   },
   row: {
     flexDirection: "row",

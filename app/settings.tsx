@@ -233,7 +233,7 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 24,
+    padding: 5,
   },
   content: {
     marginTop: 20,

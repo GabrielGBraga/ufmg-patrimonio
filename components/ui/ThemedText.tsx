@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   title: {
-    fontSize: 32,
+    fontSize: 29,
     fontWeight: "bold",
     lineHeight: 32,
     paddingTop: 10,
