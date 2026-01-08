@@ -20,11 +20,11 @@ import { ThemedHeader } from "@/components/ui/ThemedHeader";
 import { router } from "expo-router";
 import { useIsFocused } from "@react-navigation/native";
 import CameraScreen from "@/components/ui/CameraScreen";
-import { formatAtmNum, formatPatNum } from "@/hooks/formating";
+import { formatAtmNum, formatInputForSearch, formatPatNum } from "@/hooks/formating";
 import { supabase } from "@/utils/supabase";
 
 export default function listing() {
-  const [patNum, setPatNum] = useState("");
+  const [search, setSearch] = useState("");
   const [patrimonioList, setPatrimonioList] = useState<Patrimonio[]>([]);
   const [scanBool, setScanBool] = useState(false);
   const [docId, setDocId] = useState("");
@@ -32,6 +32,20 @@ export default function listing() {
   const [image, setImage] = useState<any>();
   const isFocused = useIsFocused();
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+
+
+  const searchTypes = Object.entries(labelPatrimonio)
+    .filter(([key, content]) => {
+      // 1. Primeiro garantimos que é uma string (isso já elimina o objeto 'image' e números)
+      // 2. Depois garantimos que a string não está vazia (elimina 'lastEditedBy')
+      return typeof content === 'string' && content.length > 0;
+    })
+    .map(([key, label]) => ({
+      label: label as string, 
+      value: key,
+    }));
+
+  const [filter, setFilter] = useState<string>(searchTypes[0].value);
 
   const user = async () => {
     return (await supabase.auth.getUser()).data.user;
@@ -79,31 +93,29 @@ export default function listing() {
   }
 
   const fetchPatrimonio = async () => {
-    if ((await user()) && patNum !== "") {
+    if ((await user()) && search !== "") {
       try {
         let fetchedData : any[];
+
+        let formatSearch = search;
+        if (filter === "patNum" || filter === "atmNum") {
+          formatSearch = formatInputForSearch(search);
+        }
         
         const { data, error } = await supabase
           .from('patrimonios')
           .select()
-          .eq('patNum', formatPatNum(patNum))
+          .eq(filter, formatSearch)
+
+        console.log("Filtro de busca: ", filter);
+        console.log("Valor de busca: ", formatSearch);
+        console.log("Resultado da busca: ", data);
           
         if (error) return console.error("Erro ao buscar patrimônio: ", error);
         fetchedData = data;
-          
+
         if (fetchedData.length === 0) {
-          console.log("Tentando buscar por ATM")
-          const { data, error } = await supabase
-            .from('patrimonios')
-            .select()
-            .eq('atmNum', formatAtmNum(patNum))
-
-            if (error) return console.error("Erro ao buscar patrimônio: ", error);
-          fetchedData = data;
-
-          if (fetchedData.length === 0) {
-            return Alert.alert("Patrimônio não encontrado.");
-          }
+          return Alert.alert("Patrimônio não encontrado.");
         }
 
         if (fetchedData && fetchedData.length > 0) {
@@ -115,7 +127,7 @@ export default function listing() {
         console.error("Erro ao buscar patrimônios: ", error);
       }
     } else {
-      patNum === ""
+      search === ""
         ? Alert.alert("Numero de Patrimonio deve ter valor.")
         : console.log("Nenhum usuário logado");
     }
@@ -189,7 +201,7 @@ export default function listing() {
       <ThemedHeader title="Escanear Patrimonio" onPressIcon={() => {setScanBool(false)}} variant="back"/>
       <CameraScreen
         onBarcodeScanned={({ type, data }) => {
-          setPatNum(data);
+          setSearch(data);
           console.log(`Scanned: ${type} - ${data}`);
           setScanBool(false)
         }}
@@ -201,15 +213,18 @@ export default function listing() {
 
       <ThemedView style={styles.row}>
         <ThemedTextInput
-          placeholder="Número do Patrimônio"
-          value={patNum}
-          onChangeText={(themedText) => setPatNum(themedText)}
+          placeholder="Digite a pesquisa aqui..."
+          value={search}
+          onChangeText={(themedText) => setSearch(themedText)}
           style={styles.input}
-        />
 
-        <ThemedButton  onPress={fetchPatrimonio}>
-          <ThemedText type="defaultSemiBold">Pesquisar</ThemedText>
-        </ThemedButton>
+          filterData={searchTypes}
+          filterValue={filter}
+          onFilterChange={(item) => setFilter(item.value)}
+
+          iconName="magnify"
+          onIconPress={fetchPatrimonio}
+        />
       </ThemedView>
 
       <ThemedButton
@@ -240,7 +255,6 @@ const styles = StyleSheet.create({
     margin: 10,
     alignItems: "center",
     justifyContent: "center",
-    width: "100%",
   },
   input: {
     flex: 1,
@@ -249,8 +263,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   searchButton: {
-    marginRight: 20,
-    marginLeft: 10,
+    margin: 10,
     padding: 12,
     borderRadius: 8,
     alignItems: "center",

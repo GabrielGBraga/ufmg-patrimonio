@@ -19,6 +19,7 @@ export const Colors = {
     trackColor: '#007BFF',
     falseTrackColor: '#8a8a8a',
     thumbColor: '#0599e8',
+    dropdownBackground: '#d1cfcfff',
   },
   dark: {
     background: '#121212',
@@ -35,5 +36,6 @@ export const Colors = {
     trackColor: '#fa6747',
     falseTrackColor: '#8a8a8a',
     thumbColor: '#d1563a',
+    dropdownBackground: '#2C2C2C',
   },
 };
