@@ -171,7 +171,7 @@ export default function listing() {
       <View style={{ flexShrink: 0 }}> 
         <ThemedView style={styles.row}>
           <ThemedTextInput
-            placeholder="Digite a pesquisa aqui..."
+            placeholder="Pesquise aqui..."
             value={search}
             onChangeText={setSearch}
             style={styles.input}
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
   },
   renderContainer: {
     // Width and Margin are now handled dynamically in renderItem
-    height: '90%', 
+    height: '100%', 
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -275,7 +275,8 @@ const styles = StyleSheet.create({
   },
   labelContainer: {
     width: '35%',
-    paddingRight: 10,
+    paddingRight: 0,
+    marginRight: 10,
   },
   dataContainer: {
     width: '65%',

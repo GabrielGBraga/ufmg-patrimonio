@@ -33,7 +33,7 @@ export function ThemedTextInput<T = any>({
     filterValueField = 'value' as keyof T,
     onFilterChange,
     filterPlaceholder,
-    filterWidth = 155, // Largura padrão ajustada
+    filterWidth = 145, // Largura padrão ajustada
     
     ...otherProps
 }: ThemedTextInputProps<T>) {
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         height: 38, // Altura menor que o input (58px) para parecer "flutuante"
         borderRadius: 10, // Arredondado próprio
-        marginRight: 20, // Espaço entre caixinha e texto
+        marginRight: 10, // Espaço entre caixinha e texto
         paddingRight: 4,
         paddingLeft: 8,    
     },
