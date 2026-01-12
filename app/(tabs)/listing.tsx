@@ -26,29 +26,13 @@ import { supabase } from "@/utils/supabase";
 
 // --- SUB-COMPONENTE ---
 const PatrimonioCard = ({ item, onEdit }: { item: any, onEdit: (id: string) => void }) => {
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    let isActive = true; 
-    const getUrl = async () => {
-      if (item.image?.fileName) {
-        setIsLoading(true);
-        const { data, error } = await supabase
-          .storage
-          .from('images')
-          .createSignedUrl(item.image.fileName, 60);
-          
-        if (isActive) {
-          if (error) console.error("Error fetching image URL: ", error);
-          else if (data?.signedUrl) setImageUrl(data.signedUrl);
-          setIsLoading(false);
-        }
-      }
-    };
-    getUrl();
-    return () => { isActive = false; };
-  }, [item.image?.fileName]);
+  const { data } = supabase
+    .storage
+    .from('images') // Certifique-se que o bucket se chama 'images' e está PÚBLICO no Supabase
+    .getPublicUrl(item.image?.fileName);
+
+    const imageUrl = data.publicUrl;
 
   return (
     <ThemedView style={styles.patrimonioContainer}>
@@ -58,9 +42,7 @@ const PatrimonioCard = ({ item, onEdit }: { item: any, onEdit: (id: string) => v
         nestedScrollEnabled={true}
       >
         <View style={styles.imageContainer}>
-          {isLoading ? (
-            <ActivityIndicator size="large" color="#ffffff" style={{ marginVertical: 20 }} />
-          ) : imageUrl ? (
+          {imageUrl ? (
             <Image
               source={{ uri: imageUrl }}
               style={{
