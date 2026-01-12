@@ -4,7 +4,9 @@ import {
   View,
   Alert,
   TouchableOpacity,
-  ActivityIndicator, // <--- 1. Import Added
+  ActivityIndicator,
+  ScrollView,
+  useWindowDimensions, // <--- 1. Import this hook
 } from "react-native";
 import { Image } from 'expo-image';
 import React, { useEffect, useState } from "react";
@@ -22,44 +24,39 @@ import CameraScreen from "@/components/ui/CameraScreen";
 import { formatInputForSearch } from "@/hooks/formating";
 import { supabase } from "@/utils/supabase";
 
-// --- SUB-COMPONENTE: Para gerenciar a imagem de CADA item individualmente ---
+// --- SUB-COMPONENTE ---
 const PatrimonioCard = ({ item, onEdit }: { item: any, onEdit: (id: string) => void }) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false); // <--- 2. Loading State
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     let isActive = true; 
-    
     const getUrl = async () => {
-      // Only start loading if there is a file to fetch
       if (item.image?.fileName) {
-        setIsLoading(true); // <--- Start Loading
-
+        setIsLoading(true);
         const { data, error } = await supabase
           .storage
           .from('images')
           .createSignedUrl(item.image.fileName, 60);
           
         if (isActive) {
-          if (error) {
-            console.error("Error fetching image URL: ", error);
-          } else if (data?.signedUrl) {
-            setImageUrl(data.signedUrl);
-          }
-          setIsLoading(false); // <--- Stop Loading (Success or Error)
+          if (error) console.error("Error fetching image URL: ", error);
+          else if (data?.signedUrl) setImageUrl(data.signedUrl);
+          setIsLoading(false);
         }
       }
     };
-
     getUrl();
     return () => { isActive = false; };
   }, [item.image?.fileName]);
 
   return (
-    <View style={styles.renderContainer}>
-      <ThemedView style={styles.patrimonioContainer}>
-        
-        {/* --- 3. Image / Loading Logic --- */}
+    <ThemedView style={styles.patrimonioContainer}>
+      <ScrollView 
+        showsVerticalScrollIndicator={true}
+        contentContainerStyle={{ paddingBottom: 20 }}
+        nestedScrollEnabled={true}
+      >
         <View style={styles.imageContainer}>
           {isLoading ? (
             <ActivityIndicator size="large" color="#ffffff" style={{ marginVertical: 20 }} />
@@ -68,7 +65,7 @@ const PatrimonioCard = ({ item, onEdit }: { item: any, onEdit: (id: string) => v
               source={{ uri: imageUrl }}
               style={{
                 height: item.image?.height || 200,
-                width: item.image?.width || 200,
+                width: '100%',
                 resizeMode: 'contain',
               }}
               contentFit="contain"
@@ -105,9 +102,8 @@ const PatrimonioCard = ({ item, onEdit }: { item: any, onEdit: (id: string) => v
           <Ionicons name="pencil" size={25} color="black" />
           <ThemedText style={{ marginLeft: 8 }}>Editar</ThemedText>
         </TouchableOpacity>
-
-      </ThemedView>
-    </View>
+      </ScrollView>
+    </ThemedView>
   );
 };
 
@@ -118,27 +114,21 @@ export default function listing() {
   const [scanBool, setScanBool] = useState(false);
   const isFocused = useIsFocused();
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  
+  // --- 2. Dynamic Dimensions Calculation ---
+  const { width } = useWindowDimensions(); 
+  
+  // Calculate sizes based on the CURRENT width (rotates automatically)
+  const CARD_WIDTH = width * 0.85; 
+  const CARD_MARGIN = 10;
+  const SNAP_INTERVAL = CARD_WIDTH + (CARD_MARGIN * 2); 
+  const SIDE_SPACING = (width - CARD_WIDTH) / 2 - CARD_MARGIN;
 
   const searchTypes = Object.entries(labelPatrimonio)
-    .filter(([key, content]) => {
-      return typeof content === 'string' && content.length > 0;
-    })
-    .map(([key, label]) => ({
-      label: label as string,
-      value: key,
-    }));
+    .filter(([key, content]) => typeof content === 'string' && content.length > 0)
+    .map(([key, label]) => ({ label: label as string, value: key }));
 
   const [filter, setFilter] = useState<string>(searchTypes[0].value);
-
-  const user = async () => {
-    return (await supabase.auth.getUser()).data.user;
-  };
-
-  useEffect(() => {
-    if (isFocused) {
-      // Optional refresh logic
-    }
-  }, [isFocused]);
 
   useEffect(() => {
     (async () => {
@@ -147,62 +137,40 @@ export default function listing() {
     })();
   }, []);
 
-  if (hasPermission === null) {
-    return <ThemedText>Requesting camera permissions...</ThemedText>;
-  }
-
-  if (hasPermission === false) {
-    return <ThemedText>No access to camera</ThemedText>;
-  }
-
   const fetchPatrimonio = async () => {
-    if ((await user()) && search !== "") {
+    if ((await supabase.auth.getUser()).data.user && search !== "") {
       try {
-        let fetchedData: any[];
         let formatSearch = search;
-
         if (filter === "patNum" || filter === "atmNum") {
           formatSearch = formatInputForSearch(search);
         }
-
         const { data, error } = await supabase
           .from('patrimonios')
           .select()
           .ilike(filter, `%${formatSearch}%`);
-
-        console.log("Filtro de busca: ", filter);
-        console.log("Valor de busca (formatted): ", formatSearch);
         
-        if (error) return console.error("Erro ao buscar patrimônio: ", error);
+        if (error) return console.error("Erro: ", error);
         
-        fetchedData = data || [];
-
+        const fetchedData = data || [];
         if (fetchedData.length === 0) {
           setPatrimonioList([]);
           return Alert.alert("Nenhum patrimônio encontrado.");
         }
-
         setPatrimonioList(fetchedData);
-        
       } catch (error) {
-        console.error("Erro ao buscar patrimônios: ", error);
+        console.error("Erro: ", error);
       }
     } else {
-      search === ""
-        ? Alert.alert("O campo de pesquisa deve ter valor.")
-        : console.log("Nenhum usuário logado");
+      search === "" ? Alert.alert("Digite um valor.") : null;
     }
   };
 
   const editPat = (id: string) => {
-    router.push({
-      pathname: "/modalManagePat",
-      params: {
-        mode: "edit",
-        id: id,
-      },
-    });
+    router.push({ pathname: "/modalManagePat", params: { mode: "edit", id: id } });
   };
+
+  if (hasPermission === null) return <ThemedText>Requesting permissions...</ThemedText>;
+  if (hasPermission === false) return <ThemedText>No access to camera</ThemedText>;
 
   return scanBool ? (
     <ThemedView style={styles.safeArea}>
@@ -218,39 +186,59 @@ export default function listing() {
     <ThemedView style={styles.safeArea}>
       <ThemedHeader title="Pesquisar Patrimonio" onPressIcon={() => router.push('/settings')} />
 
-      <ThemedView style={styles.row}>
-        <ThemedTextInput
-          placeholder="Digite a pesquisa aqui..."
-          value={search}
-          onChangeText={(themedText) => setSearch(themedText)}
-          style={styles.input}
+      <View style={{ flexShrink: 0 }}> 
+        <ThemedView style={styles.row}>
+          <ThemedTextInput
+            placeholder="Digite a pesquisa aqui..."
+            value={search}
+            onChangeText={setSearch}
+            style={styles.input}
+            filterData={searchTypes}
+            filterValue={filter}
+            onFilterChange={(item) => setFilter(item.value)}
+            iconName="magnify"
+            onIconPress={fetchPatrimonio}
+          />
+        </ThemedView>
 
-          filterData={searchTypes}
-          filterValue={filter}
-          onFilterChange={(item) => setFilter(item.value)}
-
-          iconName="magnify"
-          onIconPress={fetchPatrimonio}
-        />
-      </ThemedView>
-
-      <ThemedButton
-        onPress={() => {
-          setScanBool(true);
-        }}
-      >
-        <ThemedText type="defaultSemiBold">Escanear</ThemedText>
-      </ThemedButton>
+        <ThemedButton onPress={() => setScanBool(true)}>
+          <ThemedText type="defaultSemiBold">Escanear</ThemedText>
+        </ThemedButton>
+      </View>
 
       <FlatList
         data={patrimonioList}
-        renderItem={({ item }) => <PatrimonioCard item={item} onEdit={editPat} />}
+        renderItem={({ item }) => (
+          // --- 3. Dynamic Styling Wrapper ---
+          // We apply the width dynamically here instead of in StyleSheet
+          <View style={[
+            styles.renderContainer, 
+            { width: CARD_WIDTH, marginHorizontal: CARD_MARGIN } 
+          ]}>
+            <PatrimonioCard item={item} onEdit={editPat} />
+          </View>
+        )}
         keyExtractor={(item) => item.id ? item.id.toString() : Math.random().toString()}
-        contentContainerStyle={styles.listContainer}
+        horizontal={true}
+        showsHorizontalScrollIndicator={false}
+        
+        // Dynamic Spacing Logic
+        contentContainerStyle={{
+          paddingHorizontal: SIDE_SPACING,
+          paddingBottom: 20,
+          marginTop: 10,
+        }}
+        snapToInterval={SNAP_INTERVAL}
+        snapToAlignment="center"
+        decelerationRate="fast"
+        pagingEnabled={false}
+
         ListEmptyComponent={
-          <ThemedText style={{textAlign: 'center', marginTop: 20, opacity: 0.5}}>
-            Nenhum resultado para exibir
-          </ThemedText>
+          <View style={{ width: width - 20, alignItems: 'center' }}>
+            <ThemedText style={{textAlign: 'center', marginTop: 20, opacity: 0.5}}>
+              Nenhum resultado para exibir
+            </ThemedText>
+          </View>
         }
       />
     </ThemedView>
@@ -260,7 +248,8 @@ export default function listing() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    padding: 5,
+    paddingTop: 5,
+    backgroundColor: '#000',
   },
   row: {
     flexDirection: "row",
@@ -274,24 +263,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 12,
   },
-  listContainer: {
-    marginTop: 20,
-    width: "100%",
-    paddingBottom: 40,
+  renderContainer: {
+    // Width and Margin are now handled dynamically in renderItem
+    height: '90%', 
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   patrimonioContainer: {
-    width: "90%",
+    width: "100%",
+    height: "100%", 
     backgroundColor: "#7d7d7d",
+    borderRadius: 15,
     padding: 15,
-    borderRadius: 10,
-    marginBottom: 15,
-    elevation: 3,
+    elevation: 5,
+    overflow: 'hidden', 
   },
   imageContainer: {
     width: '100%',
     alignItems: 'center',
     marginBottom: 15,
-    minHeight: 50, // Added minHeight so the loader doesn't collapse the view
+    minHeight: 50,
     justifyContent: 'center',
   },
   detailRow: {
@@ -319,13 +310,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 15,
+    marginBottom: 10,
     padding: 10,
     backgroundColor: '#c7c7c7',
     borderRadius: 8,
     width: '100%',
-  },
-  renderContainer: {
-    flex: 1,
-    alignItems: "center",
   },
 });
