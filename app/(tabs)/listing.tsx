@@ -4,6 +4,7 @@ import {
   View,
   Alert,
   TouchableOpacity,
+  ActivityIndicator, // <--- 1. Import Added
 } from "react-native";
 import { Image } from 'expo-image';
 import React, { useEffect, useState } from "react";
@@ -11,7 +12,7 @@ import { ThemedText } from "@/components/ui/ThemedText";
 import { ThemedTextInput } from "@/components/ui/ThemedTextInput";
 import { ThemedView } from "@/components/ui/ThemedView";
 import { ThemedButton } from "@/components/ui/ThemedButton";
-import { labelPatrimonio, patrimonio, Patrimonio } from "@/constants/Patrimonio";
+import { labelPatrimonio, patrimonio } from "@/constants/Patrimonio";
 import { Camera } from "expo-camera";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { ThemedHeader } from "@/components/ui/ThemedHeader";
@@ -24,23 +25,32 @@ import { supabase } from "@/utils/supabase";
 // --- SUB-COMPONENTE: Para gerenciar a imagem de CADA item individualmente ---
 const PatrimonioCard = ({ item, onEdit }: { item: any, onEdit: (id: string) => void }) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false); // <--- 2. Loading State
 
   useEffect(() => {
-    let isActive = true; // Previne setar estado se o componente desmontar
+    let isActive = true; 
+    
     const getUrl = async () => {
+      // Only start loading if there is a file to fetch
       if (item.image?.fileName) {
+        setIsLoading(true); // <--- Start Loading
+
         const { data, error } = await supabase
           .storage
           .from('images')
           .createSignedUrl(item.image.fileName, 60);
           
-        if (error) {
-          console.error("Error fetching image URL: ", error);
-        } else if (data?.signedUrl && isActive) {
-          setImageUrl(data.signedUrl);
+        if (isActive) {
+          if (error) {
+            console.error("Error fetching image URL: ", error);
+          } else if (data?.signedUrl) {
+            setImageUrl(data.signedUrl);
+          }
+          setIsLoading(false); // <--- Stop Loading (Success or Error)
         }
       }
     };
+
     getUrl();
     return () => { isActive = false; };
   }, [item.image?.fileName]);
@@ -48,8 +58,12 @@ const PatrimonioCard = ({ item, onEdit }: { item: any, onEdit: (id: string) => v
   return (
     <View style={styles.renderContainer}>
       <ThemedView style={styles.patrimonioContainer}>
-        {imageUrl && (
-          <View style={styles.imageContainer}>
+        
+        {/* --- 3. Image / Loading Logic --- */}
+        <View style={styles.imageContainer}>
+          {isLoading ? (
+            <ActivityIndicator size="large" color="#ffffff" style={{ marginVertical: 20 }} />
+          ) : imageUrl ? (
             <Image
               source={{ uri: imageUrl }}
               style={{
@@ -60,8 +74,8 @@ const PatrimonioCard = ({ item, onEdit }: { item: any, onEdit: (id: string) => v
               contentFit="contain"
               transition={300}
             />
-          </View>
-        )}
+          ) : null}
+        </View>
 
         {Object.keys(patrimonio).map((key) =>
           key !== "image" && key !== "lastEditedBy" && key !== "lastEditedAt" ? (
@@ -100,7 +114,6 @@ const PatrimonioCard = ({ item, onEdit }: { item: any, onEdit: (id: string) => v
 // --- COMPONENTE PRINCIPAL ---
 export default function listing() {
   const [search, setSearch] = useState("");
-  // Lista agora pode conter objetos com ID incluso
   const [patrimonioList, setPatrimonioList] = useState<any[]>([]);
   const [scanBool, setScanBool] = useState(false);
   const isFocused = useIsFocused();
@@ -123,9 +136,7 @@ export default function listing() {
 
   useEffect(() => {
     if (isFocused) {
-      // Opcional: Recarregar a lista se voltar de uma edição, 
-      // mas cuidado para não limpar se o usuário só trocou de aba.
-      // Se quiser limpar: setPatrimonioList([]); 
+      // Optional refresh logic
     }
   }, [isFocused]);
 
@@ -150,18 +161,14 @@ export default function listing() {
         let fetchedData: any[];
         let formatSearch = search;
 
-        // Se quiser aplicar formatação específica antes da busca
         if (filter === "patNum" || filter === "atmNum") {
           formatSearch = formatInputForSearch(search);
         }
 
-        // MUDANÇA PRINCIPAL AQUI:
-        // 1. Usamos .ilike para case-insensitive match (funciona como "contains")
-        // 2. Adicionamos % antes e depois para buscar em qualquer parte da string
         const { data, error } = await supabase
           .from('patrimonios')
           .select()
-          .ilike(filter, `%${formatSearch}%`); // Ex: busca '%01%'
+          .ilike(filter, `%${formatSearch}%`);
 
         console.log("Filtro de busca: ", filter);
         console.log("Valor de busca (formatted): ", formatSearch);
@@ -171,12 +178,10 @@ export default function listing() {
         fetchedData = data || [];
 
         if (fetchedData.length === 0) {
-          setPatrimonioList([]); // Limpa a lista se não achar nada
+          setPatrimonioList([]);
           return Alert.alert("Nenhum patrimônio encontrado.");
         }
 
-        // Não pegamos mais só o [0]. Salvamos todos.
-        // O Supabase já retorna o objeto com o ID dentro.
         setPatrimonioList(fetchedData);
         
       } catch (error) {
@@ -194,10 +199,9 @@ export default function listing() {
       pathname: "/modalManagePat",
       params: {
         mode: "edit",
-        id: id, // Passamos o ID específico do item clicado
+        id: id,
       },
     });
-    // O flag 'editado' pode ser gerenciado de outras formas ou via refresh ao voltar
   };
 
   return scanBool ? (
@@ -207,7 +211,6 @@ export default function listing() {
         onBarcodeScanned={({ type, data }) => {
           setSearch(data);
           setScanBool(false);
-          // Opcional: chamar fetchPatrimonio() aqui automaticamente se desejar
         }}
       />
     </ThemedView>
@@ -241,14 +244,13 @@ export default function listing() {
 
       <FlatList
         data={patrimonioList}
-        // Usamos o sub-componente aqui
         renderItem={({ item }) => <PatrimonioCard item={item} onEdit={editPat} />}
         keyExtractor={(item) => item.id ? item.id.toString() : Math.random().toString()}
         contentContainerStyle={styles.listContainer}
         ListEmptyComponent={
-             <ThemedText style={{textAlign: 'center', marginTop: 20, opacity: 0.5}}>
-                Nenhum resultado para exibir
-             </ThemedText>
+          <ThemedText style={{textAlign: 'center', marginTop: 20, opacity: 0.5}}>
+            Nenhum resultado para exibir
+          </ThemedText>
         }
       />
     </ThemedView>
@@ -289,6 +291,8 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     marginBottom: 15,
+    minHeight: 50, // Added minHeight so the loader doesn't collapse the view
+    justifyContent: 'center',
   },
   detailRow: {
     flexDirection: 'row',
