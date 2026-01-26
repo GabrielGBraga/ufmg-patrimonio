@@ -13,3 +13,5 @@ eas update --branch preview --message "Edição de patrimônios restringida por 
 git add .
 git commit -m "Criação do botão de editar permissões"
 git push
+
+sudo shutdown -r now

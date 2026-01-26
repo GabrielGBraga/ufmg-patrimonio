@@ -16,6 +16,31 @@ import { formatInputForSearch } from "@/hooks/formating";
 import { supabase } from "@/utils/supabase";
 import { useAccessControl } from "@/hooks/useAccessControl";
 
+const PermissionButton = ({ owner_id }: { owner_id: string }) => {
+  const [isOwner, setIsOwner] = useState(false);
+
+  useEffect(() => {
+    const checkOwnership = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (data.user?.id === owner_id) {
+        setIsOwner(true);
+      }
+    };
+    checkOwnership();
+  }, [owner_id]);
+
+  if (!isOwner) return null;
+
+  return (
+    <ThemedButton 
+      onPress={() => { console.log("Editar permissões") }}
+      style={{ marginTop: 10 }}
+    >
+      <ThemedText>Editar Permissões</ThemedText>
+    </ThemedButton>
+  );
+};
+
 // Componente do Cartão
 const PatrimonioCard = ({ item, onEdit, isEditable }: { item: any, onEdit: (id: string) => void, isEditable: boolean }) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -92,6 +117,9 @@ const PatrimonioCard = ({ item, onEdit, isEditable }: { item: any, onEdit: (id: 
             <ThemedText style={{fontSize:12}}>Somente Leitura</ThemedText>
           </View>
         )}
+
+        <PermissionButton owner_id={item.owner_id}></PermissionButton>
+
       </ScrollView>
     </ThemedView>
   );
