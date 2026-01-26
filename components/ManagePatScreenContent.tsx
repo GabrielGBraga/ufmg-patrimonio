@@ -1,4 +1,4 @@
-import { ActivityIndicator, Alert, Image, StyleSheet, View, KeyboardAvoidingView, Platform } from 'react-native';
+import { ActivityIndicator, Alert, Image, StyleSheet, View, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { ThemedView } from "@/components/ui/ThemedView";
@@ -7,7 +7,7 @@ import { ScrollableAreaView } from "@/components/layout/ScrollableAreaView";
 import { TextInputGroup } from "@/components/TextInputGroup";
 import { CheckboxGroup } from "@/components/CheckboxGroup";
 import { deleteImage, getImage, uploadImage } from "@/hooks/ImageHandler";
-import { patrimonio, Patrimonio } from "@/constants/Patrimonio";
+import { patrimonio, Patrimonio } from "@/constants/Patrimonio"; // Sua constante atualizada
 import { ThemedHeader } from '@/components/ui/ThemedHeader';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useForm } from 'react-hook-form';
@@ -18,84 +18,106 @@ import { supabase } from '@/utils/supabase';
 export default function ManagePatScreenContent() {
 
     const params = useLocalSearchParams();
-    
-    // LÓGICA IMPORTANTE: Se não vier mode, assume 'add' (caso da Aba). Se vier (caso do Modal), usa o que veio.
     const mode = (params.mode as string) || 'add'; 
-    const docId = params.id as string || params.patrimonioId as string; // Aceita 'id' ou 'patrimonioId' para flexibilidade
+    const docId = params.id as string || params.patrimonioId as string;
 
     const title = mode === "edit" ? 'Editar Patrimônio' : "Adicionar Patrimônio";
     const headerIcon = mode === "edit" ? 'back' : 'settings';
     const headerFunc = mode === "edit" ? () => {router.back()} : () => router.push('/settings');
-
     const finalButtonText = mode === "edit" ? 'Atualizar' : "Adicionar";
 
     const user = async () => {
         return (await supabase.auth.getUser()).data.user;
     }
 
+    // Estado do formulário seguindo estritamente o tipo Patrimonio
     const [formData, setFormData] = useState<Patrimonio | null>(mode === 'add' ? patrimonio : null);
+    
+    // Estado separado para o INPUT de Email (já que owner_id é UUID)
+    const [ownerEmailInput, setOwnerEmailInput] = useState('');
+
     const [image, setImage] = useState<string | null>(null);
     const [boolAtm, setBoolAtm] = useState(false);
     const [loading, setLoading] = useState(mode === 'edit');
     const [imageCancel, setImageCancel] = useState(false);
     const [scanBool, setScanBool] = useState(false);
+    
+    // Controle de permissão visual
+    const [isOwner, setIsOwner] = useState(true);
 
     const { control, handleSubmit, formState: { errors }, setValue } = useForm();
 
-    // Reset do form se o usuário trocar de Aba para Modal e vice-versa sem desmontar
+    // Inicialização para Modo ADICIONAR
     useEffect(() => {
         if (mode === 'add') {
-            setFormData(patrimonio);
-            setImage(null);
-            setLoading(false);
+            const initAdd = async () => {
+                const currentUser = await user();
+                // Define o email visual como o do usuário atual
+                setOwnerEmailInput(currentUser?.email || '');
+                
+                // Define o ID técnico
+                setFormData({
+                    ...patrimonio,
+                    owner_id: currentUser?.id || ''
+                });
+                
+                setImage(null);
+                setLoading(false);
+                setIsOwner(true);
+            };
+            initAdd();
         }
     }, [mode]);
 
-    useEffect(() => {
-        if (formData?.atmNum != '') {
-            setBoolAtm(true)
-        }
-    }, [formData?.atmNum])
-
-    useEffect(() => {
-        const getUrl = async () => {
-            if (formData?.image.fileName) {
-                const { data, error } = await supabase
-                    .storage
-                    .from('images')
-                    .createSignedUrl(formData.image.fileName, 60)
-                if (error) return console.error("Error fetching image URL: ", error);
-                if (data?.signedUrl) {
-                    setImage(data.signedUrl);
-                } else {
-                    console.log("No signed URL returned");
-                }
-            }
-        };
-
-        getUrl();
-    }, [formData?.image.fileName]);
-
+    // Inicialização para Modo EDITAR
     useEffect(() => {
         if (mode === 'edit' && docId) {
             const fetchPatrimonioData = async () => {
                 setLoading(true);
+                // Busca apenas os campos que existem na tabela
                 const { data, error } = await supabase
                     .from('patrimonios')
-                    .select()
-                    .eq('id', docId)
+                    .select() // Select simples traz as colunas reais
+                    .eq('id', docId);
 
                 try {
                     if (data && data.length > 0) {
                         const patrimonioData = data[0] as Patrimonio;
+                        const currentUser = await user();
+
+                        // 1. Verifica permissão
+                        const isUserOwner = patrimonioData.owner_id === currentUser?.id;
+                        setIsOwner(isUserOwner);
+
+                        // 2. Busca o EMAIL baseado no UUID do owner_id para preencher o input visual
+                        let emailDisplay = '';
+                        if (patrimonioData.owner_id) {
+                            const { data: profile } = await supabase
+                                .from('profiles')
+                                .select('email')
+                                .eq('id', patrimonioData.owner_id)
+                                .single();
+                            
+                            if (profile) emailDisplay = profile.email || '';
+                        }
+
+                        setOwnerEmailInput(emailDisplay);
                         setFormData(patrimonioData);
+                        
+                        if (patrimonioData.image?.fileName) {
+                            const { data: imgData } = await supabase
+                                .storage
+                                .from('images')
+                                .createSignedUrl(patrimonioData.image.fileName, 60);
+                            if (imgData?.signedUrl) setImage(imgData.signedUrl);
+                        }
+
                     } else {
                         Alert.alert("Erro", "Patrimônio não encontrado.");
                         router.back();
                     }
                 } catch (error) {
-                    console.error("Erro ao buscar dados do patrimônio:", error);
-                    Alert.alert("Erro", "Não foi possível carregar os dados.");
+                    console.error(error);
                 } finally {
                     setLoading(false);
                 }
@@ -104,14 +126,15 @@ export default function ManagePatScreenContent() {
         }
     }, [mode, docId]);
 
+    // Lógica ATM Switch
+    useEffect(() => {
+        if (formData?.atmNum != '') {
+            setBoolAtm(true)
+        }
+    }, [formData?.atmNum])
+
     const handleCheckboxChange = (value: string) => {
-        setFormData((prevState) => {
-            if (!prevState) return null;
-            return {
-                ...prevState,
-                conservacao: value === prevState.conservacao ? '' : value,
-            };
-        });
+        setFormData((prevState) => prevState ? { ...prevState, conservacao: value === prevState.conservacao ? '' : value } : null);
     };
 
     const resetImage = async () => {
@@ -121,222 +144,193 @@ export default function ManagePatScreenContent() {
 
     const checkExistingPat = async (patNum: string, atmNum: string): Promise<string | null | false> => {
         if (!(await user())) return false;
-
         try {
             const { data, error } = await supabase
                 .from('patrimonios')
                 .select('patNum, atmNum')
                 .or(`patNum.eq.${patNum},atmNum.eq.${atmNum}`);
 
-            if (error) {
-                console.error("Erro ao buscar patrimônios: ", error);
-                return false;
-            }
-
-            if (!data || data.length === 0) {
-                return null;
-            }
-
+            if (error || !data || data.length === 0) return null;
             const patNumExists = data.some(item => item.patNum === patNum) && patNum !== '';
             const atmNumExists = data.some(item => item.atmNum === atmNum) && atmNum !== '';
-
-            if (patNumExists && atmNumExists) {
-                return "both";
-            } else if (patNumExists) {
-                return "patNum";
-            } else if (atmNumExists) {
-                return "atmNum";
-            }
+            if (patNumExists && atmNumExists) return "both";
+            if (patNumExists) return "patNum";
+            if (atmNumExists) return "atmNum";
             return null;
-
         } catch (error) {
-            console.error("Erro ao buscar patrimônios: ", error);
             return false;
         }
     }
 
+    // Configuração dos Inputs
+    // Mapeamos os campos do Patrimonio, mas substituímos a lógica do owner_id pelo input de email
     const inputs = formData ? [
-        { label: 'Número de Patrimônio', placeholder: 'Digite o número de patrimônio', key: 'patNum' },
+        { label: 'Número de Patrimônio', placeholder: 'Digite o número', key: 'patNum' },
         { label: 'Número ATM', placeholder: 'Digite o número ATM', key: 'atmNum', isSwitch: true, switchKey: boolAtm },
-        { label: 'Descrição', placeholder: 'Digite a descrição', key: 'descricao' },
-        { label: 'Valor', placeholder: 'Digite o valor', key: 'valor' },
-        { label: 'Responsável', placeholder: 'Digite o nome do responsável', key: 'responsavel' },
-        { label: 'Sala', placeholder: 'Digite o numero da sala', key: 'sala' }
+        { label: 'Descrição', placeholder: 'Descrição do item', key: 'descricao' },
+        { label: 'Valor', placeholder: 'Valor em R$', key: 'valor' },
+        { label: 'Sala', placeholder: 'Número da sala', key: 'sala' },
+        // Campo Especial: Email do Responsável (Manipula estado separado)
+        { 
+            label: 'Responsável (Email)', 
+            placeholder: 'email@ufmg.br', 
+            key: 'owner_email_visual', // Chave fictícia para o map
+            customValue: ownerEmailInput, // Valor visual
+            customOnChange: (text: string) => setOwnerEmailInput(text), // Setter visual
+            enabled: isOwner,
+            keyboardType: 'email-address'
+        },
     ].map((config) => ({
         label: config.label,
         placeholder: config.placeholder,
-        inputValue: formData[config.key as keyof Patrimonio] as string,
-        onInputChange: (text: string) => setFormData(prevState => prevState ? { ...prevState, [config.key]: text } : null),
+        // Se for o campo especial, usa a lógica customizada, senão usa o formData padrão
+        inputValue: config.key === 'owner_email_visual' 
+            ? config.customValue 
+            : formData[config.key as keyof Patrimonio] as string,
+        onInputChange: config.key === 'owner_email_visual'
+            ? config.customOnChange
+            : (text: string) => setFormData(prevState => prevState ? { ...prevState, [config.key]: text } : null),
         isSwitch: config.isSwitch || false,
         switchValue: config.isSwitch ? boolAtm : false,
         onSwitchChange: config.isSwitch ? (value: boolean) => setBoolAtm(value) : () => { },
+        editable: (config as any).editable !== undefined ? (config as any).editable : true,
+        keyboardType: (config as any).keyboardType || 'default',
+        enabled: config.enabled !== undefined ? config.enabled : true,
     })) : [];
 
     const deletePatrimonio = async () => {
         if (docId) {
-            Alert.alert(
-                "Confirmar Exclusão",
-                "Você tem certeza que deseja deletar este patrimônio?",
-                [
-                    { text: "Cancelar", style: "cancel" },
-                    {
-                        text: "Deletar", style: "destructive",
-                        onPress: async () => {
-                            try {
-                                setLoading(true);
-                                if (formData?.image?.fileName) {
-                                    await deleteImage(formData.image.fileName);
-                                }
-                                const response = await supabase
-                                    .from('patrimonios')
-                                    .delete()
-                                    .eq('id', docId)
-
-                                if (response.error) {
-                                    throw response.error;
-                                }
-                                Alert.alert("Sucesso", "Patrimônio deletado.");
-                                router.back();
-                            } catch (error) {
-                                setLoading(false);
-                                console.error("Erro ao deletar patrimônio:", error);
-                                Alert.alert("Erro", "Não foi possível deletar o patrimônio.");
-                            }
-                        }
-                    }
-                ]
-            );
+            Alert.alert("Confirmar Exclusão", "Deseja deletar?", [
+                { text: "Cancelar", style: "cancel" },
+                { text: "Deletar", style: "destructive", onPress: async () => {
+                    setLoading(true);
+                    if (formData?.image?.fileName) await deleteImage(formData.image.fileName);
+                    await supabase.from('patrimonios').delete().eq('id', docId);
+                    router.back();
+                }}
+            ]);
         }
     };
 
-    const handleSelectImage = async (selectionType: 'Camera' | 'Gallery') => {
-        try {
-            const result = await getImage(selectionType);
-            if (result) {
-                setImage(result.uri);
-                setFormData((prevState) => {
-                    if (!prevState) return null;
-                    return {
-                        ...prevState,
-                        image: {
-                            ...prevState.image,
-                            url: prevState.image?.fileName || '',
-                            height: result.height,
-                            width: result.width,
-                        }
-                    };
-                });
-            }
-        } catch (error) {
-            console.error('Erro ao escolher a imagem:', error);
-            Alert.alert('Erro', 'Não foi possível selecionar a imagem.');
+    const handleSelectImage = async (type: 'Camera' | 'Gallery') => {
+        const result = await getImage(type);
+        if (result) {
+            setImage(result.uri);
+            setFormData(prev => prev ? {
+                ...prev,
+                image: { ...prev.image, fileName: prev.image?.fileName || '', height: result.height, width: result.width }
+            } : null);
         }
     };
 
     const onSubmit = async () => {
-        if (!formData || !(await user())) {
-            return Alert.alert('Erro', 'Dados do formulário ou usuário não encontrados.');
-        }
-        if (!formData.patNum && !formData.atmNum) {
-            return Alert.alert('Erro', 'Preencha o número de patrimônio ou ATM.');
-        }
-        if (!formData.conservacao) {
-            return Alert.alert('Erro', 'Selecione uma opção de conservação.');
-        }
-        if (!image) {
-            return Alert.alert('Erro', 'Adicione uma imagem do patrimônio.');
-        }
+        if (!formData || !(await user())) return Alert.alert('Erro', 'Dados inválidos.');
+        if (!formData.patNum && !formData.atmNum) return Alert.alert('Erro', 'Preencha identificação.');
+        if (!formData.conservacao) return Alert.alert('Erro', 'Selecione conservação.');
+        if (!image) return Alert.alert('Erro', 'Adicione imagem.');
 
         let patFormat = formatPatNum(formData.patNum);
-
-        if (patFormat == '' && formData.patNum != '') {
-            return Alert.alert('Erro', 'O número de patrimônio inserido é inválido.');
-        }
-
         let atmFormat = formatAtmNum(formData.atmNum);
-
-        if (atmFormat == '' && formData.atmNum != '') {
-            return Alert.alert('Erro', 'O número ATM inserido é inválido.');
-        }
 
         if (mode === 'add') {
             const result = await checkExistingPat(patFormat, atmFormat);
-
-            if (result === "both") {
-                return Alert.alert("Esse patrimonio já foi cadastrado.");
-            } else if (result === "patNum") {
-                return Alert.alert("Esse número de patrimônio já foi cadastrado.");
-            } else if (result === "atmNum") {
-                return Alert.alert("Esse número ATM já foi cadastrado.");
-            }
+            if (result) return Alert.alert("Erro", "Patrimônio já cadastrado.");
         }
 
         setLoading(true);
 
         try {
-            let dataToSave: Patrimonio = {
-                ...formData,
-                patNum: patFormat,
-                atmNum: atmFormat,
-                lastEditedBy: (await user())?.email || 'N/A',
-                lastEditedAt: new Date().toLocaleDateString('pt-BR'),
-            };
+            const currentUser = await user();
+            
+            // 1. RESOLVER O DONO (Email -> UUID)
+            // Começamos com o dono atual (ou eu no add)
+            let finalOwnerId = mode === 'add' ? currentUser?.id : undefined;
 
+            if (ownerEmailInput && isOwner) {
+                const emailTrimmed = ownerEmailInput.trim();
+                // Só busca se mudou algo ou se é novo
+                if (emailTrimmed !== currentUser?.email || mode === 'add') {
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('id')
+                        .eq('email', emailTrimmed)
+                        .maybeSingle();
+
+                    if (profile) {
+                        finalOwnerId = profile.id;
+                    } else {
+                        // Se não achou o email digitado, mantém o anterior (ou eu no add) e avisa
+                        Alert.alert("Aviso", "Email não encontrado. O responsável não foi alterado.");
+                        if(mode === 'add') finalOwnerId = currentUser?.id;
+                        // No edit, se finalOwnerId for undefined, ele simplesmente não atualiza o campo
+                    }
+                }
+            }
+
+            // 2. TRATAMENTO DE IMAGEM
+            let imageFileName = formData.image?.fileName;
             if (mode === 'edit' && formData.image?.fileName && imageCancel) {
                 await deleteImage(formData.image.fileName);
             }
             if (mode === "add" || imageCancel) {
-                const imageFileName = await uploadImage(image);
-                if (imageFileName != '' && imageFileName) {
-                    dataToSave.image.fileName = imageFileName;
-                } else {
-                    throw new Error("Falha no upload da imagem.");
-                }
+                const uploadName = await uploadImage(image);
+                if (uploadName) imageFileName = uploadName;
+                else throw new Error("Falha upload imagem");
             }
 
+            // 3. CONSTRUÇÃO DO OBJETO FINAL (AQUI EVITAMOS O ERRO DE COLUNA INEXISTENTE)
+            // Criamos um objeto limpo, campo a campo, compatível com o banco
+            const dataToSave: any = {
+                patNum: patFormat,
+                atmNum: atmFormat,
+                descricao: formData.descricao,
+                valor: formData.valor,
+                sala: formData.sala,
+                conservacao: formData.conservacao,
+                
+                // Imagem (JSONB)
+                image: {
+                    fileName: imageFileName,
+                    width: formData.image?.width || 0,
+                    height: formData.image?.height || 0
+                },
+
+                // Auditoria
+                lastEditedBy: currentUser?.email || 'N/A',
+                lastEditedAt: new Date().toISOString(),
+            };
+
+            // Injeta owner_id apenas se tiver valor definido
+            if (finalOwnerId) {
+                dataToSave.owner_id = finalOwnerId;
+            }
+
+            // 4. ENVIO
             if (mode === "add") {
-                const { error } = await supabase
-                    .from('patrimonios')
-                    .insert(dataToSave)
-
-                if (error) console.error('Erro ao adicionar patrimônio:', error);
+                const { error } = await supabase.from('patrimonios').insert(dataToSave);
+                if (error) throw error;
             } else if (mode === "edit" && docId) {
-                const { error } = await supabase
-                    .from('patrimonios')
-                    .update(dataToSave)
-                    .eq('id', docId);
-
-                if (error) console.error('Erro ao atualizar patrimônio:', error);
+                const { error } = await supabase.from('patrimonios').update(dataToSave).eq('id', docId);
+                if (error) throw error;
             }
 
-            Alert.alert('Sucesso', mode === "add" ? 'Patrimônio adicionado!' : 'Patrimônio atualizado!');
-            
-            // Aqui decidimos o que fazer ao finalizar
-            if (router.canGoBack()) {
-                router.back();
-            } else {
-               // Se estiver na tab e não der pra voltar, resetamos o form visualmente apenas (opcional)
+            Alert.alert('Sucesso', mode === "add" ? 'Adicionado!' : 'Atualizado!');
+            if (router.canGoBack()) router.back();
+            else {
                 setFormData(patrimonio);
                 setImage(null);
-                setLoading(false);
+                setOwnerEmailInput(currentUser?.email || '');
             }
 
-        } catch (error) {
-            console.error('Erro ao salvar:', error);
-            Alert.alert('Erro', 'Ocorreu um erro ao salvar o patrimônio.');
+        } catch (error: any) {
+            console.error(error);
+            Alert.alert('Erro', error.message);
+        } finally {
             setLoading(false);
         }
     };
 
-    if (loading) {
-        return (
-            <ThemedView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <ActivityIndicator size="large" />
-                <ThemedText>Carregando...</ThemedText>
-            </ThemedView>
-        );
-    }
-
+    if (loading) return <ThemedView style={{flex:1, justifyContent:'center'}}><ActivityIndicator size="large"/></ThemedView>;
     if (!formData) return null;
 
     if (scanBool) {
@@ -356,54 +350,32 @@ export default function ManagePatScreenContent() {
 
     return (
         <ThemedView style={styles.container}>
-            <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={{ flex: 1 }}
-            >
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
                 <ScrollableAreaView>
                     <ThemedHeader title={title} onPressIcon={headerFunc} variant={headerIcon}/>
-
+                    
                     {!image ? (
                         <ThemedView style={{ flexDirection: 'row' }}>
-                            <ThemedButton style={styles.imageButton} onPress={() => handleSelectImage('Gallery')}>
-                                <ThemedText style={styles.buttonText}>Escolher Imagem</ThemedText>
-                            </ThemedButton>
-                            <ThemedButton style={styles.imageButton} onPress={() => handleSelectImage('Camera')}>
-                                <ThemedText style={styles.buttonText}>Tirar Foto</ThemedText>
-                            </ThemedButton>
+                            <ThemedButton style={styles.imageButton} onPress={() => handleSelectImage('Gallery')}><ThemedText>Galeria</ThemedText></ThemedButton>
+                            <ThemedButton style={styles.imageButton} onPress={() => handleSelectImage('Camera')}><ThemedText>Câmera</ThemedText></ThemedButton>
                         </ThemedView>
                     ) : (
                         <ThemedView style={styles.imageContainer}>
-                            <Image
-                                source={{ uri: image }}
-                                style={[styles.image, {
-                                    width: formData.image?.width || 200,
-                                    height: formData.image?.height || 200,
-                                }]}
-                            />
-                            <ThemedButton style={styles.button} onPress={resetImage}>
-                                <ThemedText style={styles.buttonText}>Remover Imagem</ThemedText>
-                            </ThemedButton>
+                            <Image source={{ uri: image }} style={[styles.image, { width: 200, height: 200 }]} />
+                            <ThemedButton style={styles.button} onPress={resetImage}><ThemedText>Remover</ThemedText></ThemedButton>
                         </ThemedView>
                     )}
 
-                    <ThemedButton onPress={() => setScanBool(true)}>
-                        <ThemedText style={styles.buttonText}>Escanear Código de Barras</ThemedText>
-                    </ThemedButton>
+                    <ThemedButton onPress={() => setScanBool(true)}><ThemedText>Escanear Código</ThemedText></ThemedButton>
 
-                    <TextInputGroup inputs={inputs} control={control} errors={errors} />
+                    <TextInputGroup inputs={inputs as any} control={control} errors={errors} />
                     <CheckboxGroup selectedCheckbox={formData.conservacao} onCheckboxChange={handleCheckboxChange} />
 
                     {mode === "edit" && (
-                        <ThemedButton style={styles.deleteButton} onPress={deletePatrimonio}>
-                            <ThemedText style={styles.buttonText}>Deletar</ThemedText>
-                        </ThemedButton>
+                        <ThemedButton style={styles.deleteButton} onPress={deletePatrimonio}><ThemedText>Deletar</ThemedText></ThemedButton>
                     )}
 
-                    <ThemedButton style={styles.button} onPress={handleSubmit(onSubmit)}>
-                        <ThemedText style={styles.buttonText}>{finalButtonText}</ThemedText>
-                    </ThemedButton>
-
+                    <ThemedButton style={styles.button} onPress={handleSubmit(onSubmit)}><ThemedText>{finalButtonText}</ThemedText></ThemedButton>
                 </ScrollableAreaView>
             </KeyboardAvoidingView>
         </ThemedView>
@@ -411,47 +383,10 @@ export default function ManagePatScreenContent() {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        padding: 5,
-    },
-    imageButton: {
-        padding: 10,
-        borderRadius: 8,
-        alignItems: 'center',
-        justifyContent: 'center',
-        elevation: 5,
-        marginBottom: 15,
-        marginHorizontal: 10,
-        flex: 1
-    },
-    imageContainer: {
-        alignItems: 'center',
-        marginVertical: 10,
-    },
-    image: {
-        margin: 10,
-        borderRadius: 8,
-    },
-    button: {
-        paddingVertical: 14,
-        paddingHorizontal: 24,
-        margin: 10,
-        borderRadius: 8,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    deleteButton: {
-        paddingVertical: 14,
-        paddingHorizontal: 24,
-        margin: 10,
-        borderRadius: 8,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#dc3545'
-    },
-    buttonText: {
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
+    container: { flex: 1, padding: 5 },
+    imageButton: { padding: 10, borderRadius: 8, alignItems: 'center', justifyContent: 'center', elevation: 5, marginBottom: 15, marginHorizontal: 10, flex: 1 },
+    imageContainer: { alignItems: 'center', marginVertical: 10 },
+    image: { margin: 10, borderRadius: 8 },
+    button: { paddingVertical: 14, paddingHorizontal: 24, margin: 10, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+    deleteButton: { paddingVertical: 14, paddingHorizontal: 24, margin: 10, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: '#dc3545' },
 });

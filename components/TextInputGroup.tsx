@@ -17,6 +17,7 @@ type TextInputGroupProps ={
         isSwitch: boolean; // Indica se este campo possui um switch associado
         switchValue: boolean; // Estado atual do switch (ligado/desligado)
         onSwitchChange: (value: boolean) => void; // Função chamada ao alterar o estado do switch
+        enabled?: boolean; // Indica se o campo de texto está habilitado ou desabilitado
     }>;
     control: any; // react-hook-form control
     errors: any; // react-hook-form errors
@@ -28,64 +29,69 @@ type TextInputGroupProps ={
  * @param {TextInputGroupProps} props - Propriedades do componente.
  */
 export function TextInputGroup({ inputs, control, errors }: TextInputGroupProps) {
-    const patNum = inputs[0].inputValue === patrimonio.patNum; // Verifica se o patNum está preenchido
-    const atmNum = inputs[1].inputValue === patrimonio.atmNum; // Verifica se o atmNum está preenchido
+    // Dica: Use nomes mais descritivos para variáveis booleanas (ex: isPatNumFilled)
+    const patNum = inputs[0].inputValue === patrimonio.patNum;
+    const atmNum = inputs[1].inputValue === patrimonio.atmNum;
 
     return (
         <ThemedView style={styles.container}>
-            {inputs.map((input, index) => (
-                <ThemedView key={index} style={styles.inputWrapper}>
-                    {input.isSwitch && (
-                        <ThemedView style={styles.switchWrapper}>
-                            <ThemedSwitch
-                                value={input.switchValue} // Estado do switch (ligado/desligado)
-                                onValueChange={input.onSwitchChange} // Função para alternar o estado do switch
-                            />
-                        </ThemedView>
-                    )}
-                    
-                    {(input.switchValue || !input.isSwitch) && (
-                        <Controller
-                            control={control}
-                            name={input.label} // Nome do campo no formulário
-                            defaultValue={input.inputValue || ''} // Valor inicial do campo
-                            rules={{
-                                required: input.label === 'Número ATM' && patNum
-                                    ? 'Número ATM é obrigatório se o Número de Patrimônio não estiver preenchido'
-                                    : input.label === 'Número ATM' && !patNum
-                                    ? false
-                                    : input.label === 'Número de Patrimônio' && atmNum
-                                    ? 'Número de Patrimônio é obrigatório se o Número ATM não estiver preenchido'
-                                    : input.label === 'Número de Patrimônio' && !atmNum
-                                    ? false
-                                    : `${input.label} é obrigatório`, // Outros campos são sempre obrigatórios
-                            }}
-                            render={({ field: { onChange, value } }) => {
-                                const handleChange = (text: string) => {
-                                    onChange(text); // Atualiza o estado do react-hook-form
-                                    input.onInputChange?.(text); // Atualiza o estado do useState externo
-                                };
-                                return (
+            {inputs.map((input, index) => {
+                // Definindo o padrão true aqui
+                const { enabled = true } = input;
+
+                return (
+                    <ThemedView key={index} style={styles.inputWrapper}>
+                        {input.isSwitch && (
+                            <ThemedView style={styles.switchWrapper}>
+                                <ThemedSwitch
+                                    value={input.switchValue}
+                                    onValueChange={input.onSwitchChange}
+                                />
+                            </ThemedView>
+                        )}
+                        
+                        {(input.switchValue || !input.isSwitch) && (
+                            <Controller
+                                control={control}
+                                name={input.label}
+                                defaultValue={input.inputValue || ''}
+                                // Lógica de validação simplificada
+                                rules={{
+                                    required: {
+                                        value: 
+                                            (input.label === 'Número ATM' && !patNum) || 
+                                            (input.label === 'Número de Patrimônio' && !atmNum) ||
+                                            (input.label !== 'Número ATM' && input.label !== 'Número de Patrimônio'),
+                                        message: `${input.label} é obrigatório`
+                                    }
+                                }}
+                                render={({ field: { onChange, value } }) => (
                                     <>
                                         <ThemedTextInput
-                                            placeholder={input.placeholder} // Placeholder exibido no campo de texto
-                                            value={value} // Valor atual do react-hook-form
-                                            onChangeText={handleChange} // Sincroniza com RHF e useState
-                                            style={styles.textInput} // Estilização do campo de texto
+                                            editable={enabled} // Aplicando o valor padrão
+                                            placeholder={input.placeholder}
+                                            value={value}
+                                            onChangeText={(text) => {
+                                                onChange(text);
+                                                input.onInputChange?.(text);
+                                            }}
+                                            style={[
+                                                styles.textInput, 
+                                                !enabled && { opacity: 0.5 } // Feedback visual de desabilitado
+                                            ]}
                                         />
-                                        {/* Exibe mensagem de erro se o campo for inválido */}
                                         {errors[input.label] && (
                                             <Text style={styles.errorText}>
                                                 {errors[input.label]?.message}
                                             </Text>
                                         )}
                                     </>
-                                );
-                            }}
-                        />
-                    )}
-                </ThemedView>
-            ))}
+                                )}
+                            />
+                        )}
+                    </ThemedView>
+                );
+            })}
         </ThemedView>
     );
 }

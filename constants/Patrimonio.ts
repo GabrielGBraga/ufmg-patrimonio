@@ -13,7 +13,7 @@ export const patrimonio = {
     descricao: '',
     valor: '',
     conservacao: '',
-    responsavel: '',
+    owner_id: '',
     sala: '',
     lastEditedBy: '',
     lastEditedAt: ''
@@ -21,7 +21,7 @@ export const patrimonio = {
 
 export type Patrimonio = typeof patrimonio;
 
-export const labelPatrimonio = {
+export const labelPatrimonio: Patrimonio = {
     image: {
         fileName: '',
         height: 0,
@@ -32,7 +32,7 @@ export const labelPatrimonio = {
     descricao: 'Descrição',
     valor: 'Valor',
     conservacao: 'Conservação',
-    responsavel: 'Responsável',
+    owner_id: 'Responsável',
     sala: 'Sala',
     lastEditedBy: '',
     lastEditedAt: ''

@@ -3,7 +3,7 @@ import { ThemedView } from "@/components/ui/ThemedView";
 import { ThemedText } from '@/components/ui/ThemedText';
 import { ThemedButton } from '@/components/ui/ThemedButton';
 import { ThemedTextInput } from "@/components/ui/ThemedTextInput";
-import { StyleSheet, Alert } from 'react-native';
+import { StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/utils/supabase';
@@ -44,41 +44,46 @@ export default function Cadastro () {
     }
 
     return (
-        <ThemedView style={styles.container}>
+        <KeyboardAvoidingView 
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={styles.keyboardAvoidingView}
+        >
+            <ThemedView style={styles.container}>
 
-            <ThemedText type={'title'}>Cadastro</ThemedText>
+                <ThemedText type={'title'}>Cadastro</ThemedText>
 
-            <ThemedTextInput
-                style={styles.textInput}
-                placeholder="Nome"
-                value={nome}
-                onChangeText={setNome}
-            />
+                <ThemedTextInput
+                    style={styles.textInput}
+                    placeholder="Nome"
+                    value={nome}
+                    onChangeText={setNome}
+                />
 
-            <ThemedTextInput
-                style={styles.textInput}
-                placeholder="Email"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-            />
+                <ThemedTextInput
+                    style={styles.textInput}
+                    placeholder="Email"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                />
 
-            <ThemedTextInput
-                style={styles.textInput}
-                placeholder="Senha"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                iconName={showPassword ? "eye-off" : "eye"}
-                onIconPress={() => setShowPassword(!showPassword)}
-            />
+                <ThemedTextInput
+                    style={styles.textInput}
+                    placeholder="Senha"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                    iconName={showPassword ? "eye-off" : "eye"}
+                    onIconPress={() => setShowPassword(!showPassword)}
+                />
 
-            <ThemedButton style={styles.button} onPress={signUpWithEmail}>
-                <ThemedText> Cadastrar </ThemedText>
-            </ThemedButton>
+                <ThemedButton style={styles.button} onPress={signUpWithEmail}>
+                    <ThemedText> Cadastrar </ThemedText>
+                </ThemedButton>
 
-        </ThemedView>
+            </ThemedView>
+        </KeyboardAvoidingView>
     );
 };
 
@@ -87,6 +92,9 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    keyboardAvoidingView: {
+        flex: 1
     },
     textInput: {
         width: '90%',

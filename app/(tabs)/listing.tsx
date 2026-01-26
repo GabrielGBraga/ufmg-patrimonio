@@ -1,20 +1,11 @@
-import {
-  StyleSheet,
-  FlatList,
-  View,
-  Alert,
-  TouchableOpacity,
-  ActivityIndicator,
-  ScrollView,
-  useWindowDimensions, // <--- 1. Import this hook
-} from "react-native";
+import { StyleSheet, FlatList, View, Alert, TouchableOpacity, ActivityIndicator, ScrollView, useWindowDimensions } from "react-native";
 import { Image } from 'expo-image';
 import React, { useEffect, useState } from "react";
 import { ThemedText } from "@/components/ui/ThemedText";
 import { ThemedTextInput } from "@/components/ui/ThemedTextInput";
 import { ThemedView } from "@/components/ui/ThemedView";
 import { ThemedButton } from "@/components/ui/ThemedButton";
-import { labelPatrimonio, patrimonio } from "@/constants/Patrimonio";
+import { labelPatrimonio, patrimonio } from "@/constants/Patrimonio"; // Importando do seu arquivo
 import { Camera } from "expo-camera";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { ThemedHeader } from "@/components/ui/ThemedHeader";
@@ -23,94 +14,106 @@ import { useIsFocused } from "@react-navigation/native";
 import CameraScreen from "@/components/ui/CameraScreen";
 import { formatInputForSearch } from "@/hooks/formating";
 import { supabase } from "@/utils/supabase";
+import { useAccessControl } from "@/hooks/useAccessControl";
 
-// --- SUB-COMPONENTE ---
-const PatrimonioCard = ({ item, onEdit }: { item: any, onEdit: (id: string) => void }) => {
+// Componente do Cartão
+const PatrimonioCard = ({ item, onEdit, isEditable }: { item: any, onEdit: (id: string) => void, isEditable: boolean }) => {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const { data } = supabase
-    .storage
-    .from('images') // Certifique-se que o bucket se chama 'images' e está PÚBLICO no Supabase
-    .getPublicUrl(item.image?.fileName);
-
-    const imageUrl = data.publicUrl;
+  useEffect(() => {
+    let isActive = true;
+    const getUrl = async () => {
+      if (item.image?.fileName) {
+        setIsLoading(true);
+        const { data, error } = await supabase.storage.from('images').createSignedUrl(item.image.fileName, 60);
+        if (isActive && data?.signedUrl) setImageUrl(data.signedUrl);
+        setIsLoading(false);
+      }
+    };
+    getUrl();
+    return () => { isActive = false; };
+  }, [item.image?.fileName]);
 
   return (
     <ThemedView style={styles.patrimonioContainer}>
-      <ScrollView 
-        showsVerticalScrollIndicator={true}
-        contentContainerStyle={{ paddingBottom: 20 }}
-        nestedScrollEnabled={true}
-      >
+      <ScrollView showsVerticalScrollIndicator={true} nestedScrollEnabled={true}>
         <View style={styles.imageContainer}>
-          {imageUrl ? (
-            <Image
-              source={{ uri: imageUrl }}
-              style={{
-                height: item.image?.height || 200,
-                width: '100%',
-                resizeMode: 'contain',
-              }}
-              contentFit="contain"
-              transition={300}
-            />
-          ) : null}
+          {isLoading ? <ActivityIndicator color="#fff"/> : imageUrl && (
+            <Image source={{ uri: imageUrl }} style={{ height: 200, width: '100%' }} contentFit="contain" />
+          )}
         </View>
 
-        {Object.keys(patrimonio).map((key) =>
-          key !== "image" && key !== "lastEditedBy" && key !== "lastEditedAt" ? (
+        {Object.keys(labelPatrimonio).map((key) => {
+          // Ignora campos técnicos
+          if (['image', 'lastEditedBy', 'lastEditedAt'].includes(key)) return null;
+
+          // Tratamento Especial para o Responsável (owner_id)
+          if (key === 'owner_id') {
+              return (
+                <View style={styles.detailRow} key={key}>
+                  <View style={styles.labelContainer}>
+                    <ThemedText style={styles.label}>{labelPatrimonio[key]}:</ThemedText>
+                  </View>
+                  <View style={styles.dataContainer}>
+                    {/* Aqui mostramos o nome que veio do Join (dono.full_name) e não o UUID */}
+                    <ThemedText style={styles.data}>{item.dono?.full_name || "Não definido"}</ThemedText>
+                  </View>
+                </View>
+              );
+          }
+
+          // Campos Padrões
+          return (
             <View style={styles.detailRow} key={key}>
               <View style={styles.labelContainer}>
-                <ThemedText style={styles.label}>
-                  {labelPatrimonio[key as keyof typeof labelPatrimonio] as string}:
-                </ThemedText>
+                <ThemedText style={styles.label}>{labelPatrimonio[key]}:</ThemedText>
               </View>
               <View style={styles.dataContainer}>
                 <ThemedText style={styles.data}>{item[key]}</ThemedText>
               </View>
             </View>
-          ) : null
-        )}
+          );
+        })}
 
         <View style={styles.detailRow}>
-          <View style={styles.labelContainer}>
-            <ThemedText style={styles.label}>Última Edição:</ThemedText>
-          </View>
-          <View style={styles.dataContainer}>
-            <ThemedText style={styles.data}>{item.lastEditedBy} - {item.lastEditedAt}</ThemedText>
-          </View>
+            <ThemedText style={styles.label}>Última Edição: </ThemedText>
+            <ThemedText style={styles.data}>{item.lastEditedBy} - {new Date(item.lastEditedAt).toLocaleDateString()}</ThemedText>
         </View>
 
-        <TouchableOpacity style={styles.editButton} onPress={() => onEdit(item.id)}>
-          <Ionicons name="pencil" size={25} color="black" />
-          <ThemedText style={{ marginLeft: 8 }}>Editar</ThemedText>
-        </TouchableOpacity>
+        {isEditable ? (
+          <TouchableOpacity style={styles.editButton} onPress={() => onEdit(item.id)}>
+            <Ionicons name="pencil" size={25} color="black" />
+            <ThemedText style={{ marginLeft: 8 }}>Editar</ThemedText>
+          </TouchableOpacity>
+        ) : (
+          <View style={{ alignItems: 'center', opacity: 0.5, padding: 10 }}>
+            <Ionicons name="lock-closed" size={20} color="white" />
+            <ThemedText style={{fontSize:12}}>Somente Leitura</ThemedText>
+          </View>
+        )}
       </ScrollView>
     </ThemedView>
   );
 };
 
-// --- COMPONENTE PRINCIPAL ---
 export default function listing() {
   const [search, setSearch] = useState("");
   const [patrimonioList, setPatrimonioList] = useState<any[]>([]);
   const [scanBool, setScanBool] = useState(false);
-  const isFocused = useIsFocused();
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   
-  // --- 2. Dynamic Dimensions Calculation ---
+  const { canEdit } = useAccessControl();
   const { width } = useWindowDimensions(); 
-  
-  // Calculate sizes based on the CURRENT width (rotates automatically)
   const CARD_WIDTH = width * 0.85; 
   const CARD_MARGIN = 10;
   const SNAP_INTERVAL = CARD_WIDTH + (CARD_MARGIN * 2); 
   const SIDE_SPACING = (width - CARD_WIDTH) / 2 - CARD_MARGIN;
 
   const searchTypes = Object.entries(labelPatrimonio)
-    .filter(([key, content]) => typeof content === 'string' && content.length > 0)
+    .filter(([key, content]) => typeof content === 'string' && content.length > 0 && key !== 'image' && key !== 'lastEditedBy' && key !== 'lastEditedAt')
     .map(([key, label]) => ({ label: label as string, value: key }));
-
-  const [filter, setFilter] = useState<string>(searchTypes[0].value);
+  const [filter, setFilter] = useState<string>(searchTypes[0]?.value || 'patNum');
 
   useEffect(() => {
     (async () => {
@@ -123,27 +126,23 @@ export default function listing() {
     if ((await supabase.auth.getUser()).data.user && search !== "") {
       try {
         let formatSearch = search;
-        if (filter === "patNum" || filter === "atmNum") {
-          formatSearch = formatInputForSearch(search);
-        }
+        if (filter === "patNum" || filter === "atmNum") formatSearch = formatInputForSearch(search);
+        
+        // --- BUSCA COM JOIN ---
+        // Trazemos tudo de patrimonios E o full_name da tabela profiles referenciada pelo owner_id
         const { data, error } = await supabase
           .from('patrimonios')
-          .select()
+          .select('*, dono:profiles(full_name)') 
           .ilike(filter, `%${formatSearch}%`);
         
-        if (error) return console.error("Erro: ", error);
-        
-        const fetchedData = data || [];
-        if (fetchedData.length === 0) {
-          setPatrimonioList([]);
-          return Alert.alert("Nenhum patrimônio encontrado.");
-        }
-        setPatrimonioList(fetchedData);
+        if (error) throw error;
+        if (!data || data.length === 0) return Alert.alert("Nenhum patrimônio encontrado.");
+        setPatrimonioList(data);
       } catch (error) {
-        console.error("Erro: ", error);
+        console.error(error);
       }
     } else {
-      search === "" ? Alert.alert("Digite um valor.") : null;
+      Alert.alert("Digite um valor.");
     }
   };
 
@@ -156,51 +155,40 @@ export default function listing() {
 
   return scanBool ? (
     <ThemedView style={styles.safeArea}>
-      <ThemedHeader title="Escanear Patrimonio" onPressIcon={() => { setScanBool(false) }} variant="back" />
-      <CameraScreen
-        onBarcodeScanned={({ type, data }) => {
-          setSearch(data);
-          setScanBool(false);
-        }}
-      />
+      <ThemedHeader title="Escanear" onPressIcon={() => setScanBool(false)} variant="back" />
+      <CameraScreen onBarcodeScanned={({ data }) => { setSearch(data); setScanBool(false); }} />
     </ThemedView>
   ) : (
     <ThemedView style={styles.safeArea}>
-      <ThemedHeader title="Pesquisar Patrimonio" onPressIcon={() => router.push('/settings')} />
-
-      <View style={{ flexShrink: 0 }}> 
+      <ThemedHeader title="Pesquisar" onPressIcon={() => router.push('/settings')} />
+      <View>
         <ThemedView style={styles.row}>
-          <ThemedTextInput
-            placeholder="Pesquise aqui..."
-            value={search}
-            onChangeText={setSearch}
-            style={styles.input}
-            filterData={searchTypes}
-            filterValue={filter}
-            onFilterChange={(item) => setFilter(item.value)}
-            iconName="magnify"
-            onIconPress={fetchPatrimonio}
-          />
+            <ThemedTextInput 
+                placeholder="Pesquisar..." 
+                value={search} 
+                onChangeText={setSearch} 
+                style={styles.input} 
+                filterData={searchTypes} 
+                filterValue={filter} 
+                onFilterChange={(item) => setFilter(item.value)} 
+                iconName="magnify" 
+                onIconPress={fetchPatrimonio} 
+            />
         </ThemedView>
-
-        <ThemedButton onPress={() => setScanBool(true)}>
-          <ThemedText type="defaultSemiBold">Escanear</ThemedText>
-        </ThemedButton>
+        <ThemedButton onPress={() => setScanBool(true)}><ThemedText>Escanear</ThemedText></ThemedButton>
       </View>
 
       <FlatList
         data={patrimonioList}
-        renderItem={({ item }) => (
-          // --- 3. Dynamic Styling Wrapper ---
-          // We apply the width dynamically here instead of in StyleSheet
-          <View style={[
-            styles.renderContainer, 
-            { width: CARD_WIDTH, marginHorizontal: CARD_MARGIN } 
-          ]}>
-            <PatrimonioCard item={item} onEdit={editPat} />
-          </View>
-        )}
-        keyExtractor={(item) => item.id ? item.id.toString() : Math.random().toString()}
+        renderItem={({ item }) => {
+          const isEditable = canEdit(item.owner_id, item.id);
+          return (
+            <View style={[styles.renderContainer, { width: CARD_WIDTH, marginHorizontal: 10 }]}>
+              <PatrimonioCard item={item} onEdit={editPat} isEditable={isEditable} />
+            </View>
+          );
+        }}
+        keyExtractor={(item) => item.id.toString()}
         horizontal={true}
         showsHorizontalScrollIndicator={false}
         
@@ -213,15 +201,7 @@ export default function listing() {
         snapToInterval={SNAP_INTERVAL}
         snapToAlignment="center"
         decelerationRate="fast"
-        pagingEnabled={false}
-
-        ListEmptyComponent={
-          <View style={{ width: width - 20, alignItems: 'center' }}>
-            <ThemedText style={{textAlign: 'center', marginTop: 20, opacity: 0.5}}>
-              Nenhum resultado para exibir
-            </ThemedText>
-          </View>
-        }
+        ListEmptyComponent={<ThemedText style={{textAlign:'center', marginTop:20}}>Sem resultados</ThemedText>}
       />
     </ThemedView>
   );
