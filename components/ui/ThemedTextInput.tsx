@@ -110,6 +110,8 @@ export const ThemedTextInput = React.forwardRef(function ThemedTextInput<T = any
                 activeUnderlineColor="transparent"
                 placeholderTextColor={contentColor}
                 textColor={contentColor}
+                cursorColor={contentColor}
+                selectionColor={contentColor}
                 onFocus={(e) => {
                     setIsFocused(true);
                     otherProps.onFocus?.(e);
@@ -122,14 +124,6 @@ export const ThemedTextInput = React.forwardRef(function ThemedTextInput<T = any
                     styles.input,
                     { backgroundColor: 'transparent' }
                 ]}
-                theme={{
-                    colors: {
-                        placeholder: contentColor,
-                        text: contentColor,
-                        primary: contentColor,
-                        cursorColor: contentColor,
-                    },
-                }}
                 right={
                     iconName !== 'none' ? (
                         <TextInput.Icon
