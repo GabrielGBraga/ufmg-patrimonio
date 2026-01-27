@@ -18,12 +18,12 @@ import { supabase } from '@/utils/supabase';
 export default function ManagePatScreenContent() {
 
     const params = useLocalSearchParams();
-    const mode = (params.mode as string) || 'add'; 
+    const mode = (params.mode as string) || 'add';
     const docId = params.id as string || params.patrimonioId as string;
 
     const title = mode === "edit" ? 'Editar Patrimônio' : "Adicionar Patrimônio";
     const headerIcon = mode === "edit" ? 'back' : 'settings';
-    const headerFunc = mode === "edit" ? () => {router.back()} : () => router.push('/settings');
+    const headerFunc = mode === "edit" ? () => { router.back() } : () => router.push('/settings');
     const finalButtonText = mode === "edit" ? 'Atualizar' : "Adicionar";
 
     const user = async () => {
@@ -32,7 +32,7 @@ export default function ManagePatScreenContent() {
 
     // Estado do formulário seguindo estritamente o tipo Patrimonio
     const [formData, setFormData] = useState<Patrimonio | null>(mode === 'add' ? patrimonio : null);
-    
+
     // Estado separado para o INPUT de Email (já que owner_id é UUID)
     const [ownerEmailInput, setOwnerEmailInput] = useState('');
 
@@ -41,7 +41,7 @@ export default function ManagePatScreenContent() {
     const [loading, setLoading] = useState(mode === 'edit');
     const [imageCancel, setImageCancel] = useState(false);
     const [scanBool, setScanBool] = useState(false);
-    
+
     // Controle de permissão visual
     const [isOwner, setIsOwner] = useState(true);
 
@@ -54,13 +54,13 @@ export default function ManagePatScreenContent() {
                 const currentUser = await user();
                 // Define o email visual como o do usuário atual
                 setOwnerEmailInput(currentUser?.email || '');
-                
+
                 // Define o ID técnico
                 setFormData({
                     ...patrimonio,
                     owner_id: currentUser?.id || ''
                 });
-                
+
                 setImage(null);
                 setLoading(false);
                 setIsOwner(true);
@@ -97,13 +97,13 @@ export default function ManagePatScreenContent() {
                                 .select('email')
                                 .eq('id', patrimonioData.owner_id)
                                 .single();
-                            
+
                             if (profile) emailDisplay = profile.email || '';
                         }
 
                         setOwnerEmailInput(emailDisplay);
                         setFormData(patrimonioData);
-                        
+
                         if (patrimonioData.image?.fileName) {
                             const { data: imgData } = await supabase
                                 .storage
@@ -171,9 +171,9 @@ export default function ManagePatScreenContent() {
         { label: 'Valor', placeholder: 'Valor em R$', key: 'valor' },
         { label: 'Sala', placeholder: 'Número da sala', key: 'sala' },
         // Campo Especial: Email do Responsável (Manipula estado separado)
-        { 
-            label: 'Responsável (Email)', 
-            placeholder: 'email@ufmg.br', 
+        {
+            label: 'Responsável (Email)',
+            placeholder: 'email@ufmg.br',
             key: 'owner_email_visual', // Chave fictícia para o map
             customValue: ownerEmailInput, // Valor visual
             customOnChange: (text: string) => setOwnerEmailInput(text), // Setter visual
@@ -184,8 +184,8 @@ export default function ManagePatScreenContent() {
         label: config.label,
         placeholder: config.placeholder,
         // Se for o campo especial, usa a lógica customizada, senão usa o formData padrão
-        inputValue: config.key === 'owner_email_visual' 
-            ? config.customValue 
+        inputValue: config.key === 'owner_email_visual'
+            ? config.customValue
             : formData[config.key as keyof Patrimonio] as string,
         onInputChange: config.key === 'owner_email_visual'
             ? config.customOnChange
@@ -202,12 +202,14 @@ export default function ManagePatScreenContent() {
         if (docId) {
             Alert.alert("Confirmar Exclusão", "Deseja deletar?", [
                 { text: "Cancelar", style: "cancel" },
-                { text: "Deletar", style: "destructive", onPress: async () => {
-                    setLoading(true);
-                    if (formData?.image?.fileName) await deleteImage(formData.image.fileName);
-                    await supabase.from('patrimonios').delete().eq('id', docId);
-                    router.back();
-                }}
+                {
+                    text: "Deletar", style: "destructive", onPress: async () => {
+                        setLoading(true);
+                        if (formData?.image?.fileName) await deleteImage(formData.image.fileName);
+                        await supabase.from('patrimonios').delete().eq('id', docId);
+                        router.back();
+                    }
+                }
             ]);
         }
     };
@@ -241,7 +243,7 @@ export default function ManagePatScreenContent() {
 
         try {
             const currentUser = await user();
-            
+
             // 1. RESOLVER O DONO (Email -> UUID)
             // Começamos com o dono atual (ou eu no add)
             let finalOwnerId = mode === 'add' ? currentUser?.id : undefined;
@@ -261,7 +263,7 @@ export default function ManagePatScreenContent() {
                     } else {
                         // Se não achou o email digitado, mantém o anterior (ou eu no add) e avisa
                         Alert.alert("Aviso", "Email não encontrado. O responsável não foi alterado.");
-                        if(mode === 'add') finalOwnerId = currentUser?.id;
+                        if (mode === 'add') finalOwnerId = currentUser?.id;
                         // No edit, se finalOwnerId for undefined, ele simplesmente não atualiza o campo
                     }
                 }
@@ -287,7 +289,7 @@ export default function ManagePatScreenContent() {
                 valor: formData.valor,
                 sala: formData.sala,
                 conservacao: formData.conservacao,
-                
+
                 // Imagem (JSONB)
                 image: {
                     fileName: imageFileName,
@@ -330,13 +332,13 @@ export default function ManagePatScreenContent() {
         }
     };
 
-    if (loading) return <ThemedView style={{flex:1, justifyContent:'center'}}><ActivityIndicator size="large"/></ThemedView>;
+    if (loading) return <ThemedView style={{ flex: 1, justifyContent: 'center' }}><ActivityIndicator size="large" /></ThemedView>;
     if (!formData) return null;
 
     if (scanBool) {
         return (
             <View style={styles.container}>
-                <ThemedHeader title="Escanear Patrimônio" onPressIcon={() => setScanBool(false)} />
+                <ThemedHeader title="Escanear Patrimônio" onPressIcon={() => setScanBool(false)} variant='back' />
                 <CameraScreen
                     onBarcodeScanned={({ data }) => {
                         setValue('Número de Patrimônio', data);
@@ -352,12 +354,14 @@ export default function ManagePatScreenContent() {
         <ThemedView style={styles.container}>
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
                 <ScrollableAreaView>
-                    <ThemedHeader title={title} onPressIcon={headerFunc} variant={headerIcon}/>
-                    
+                    <ThemedHeader title={title} onPressIcon={headerFunc} variant={headerIcon} />
+
                     {!image ? (
                         <ThemedView style={{ flexDirection: 'row' }}>
                             <ThemedButton style={styles.imageButton} onPress={() => handleSelectImage('Gallery')}><ThemedText>Galeria</ThemedText></ThemedButton>
-                            <ThemedButton style={styles.imageButton} onPress={() => handleSelectImage('Camera')}><ThemedText>Câmera</ThemedText></ThemedButton>
+                            {(Platform.OS === 'ios' || Platform.OS === 'android') && (
+                                <ThemedButton style={styles.imageButton} onPress={() => handleSelectImage('Camera')}><ThemedText>Câmera</ThemedText></ThemedButton>
+                            )}
                         </ThemedView>
                     ) : (
                         <ThemedView style={styles.imageContainer}>

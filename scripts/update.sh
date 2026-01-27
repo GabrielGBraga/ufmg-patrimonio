@@ -7,11 +7,11 @@ eas update --branch preview --message "Edição de patrimônios restringida por 
     
     # Tenta o update novamente após o install
     eas update --branch preview --message "Edição de patrimônios restringida por permissão."
-}
 
-# 2. Adiciona as mudanças, faz o commit e o push
-git add .
-git commit -m "Criação do botão de editar permissões"
-git push
+    # 2. Adiciona as mudanças, faz o commit e o push
+    git add .
+    git commit -m "Updated permissions"
+    git push
+}
 
 sudo shutdown -r now
