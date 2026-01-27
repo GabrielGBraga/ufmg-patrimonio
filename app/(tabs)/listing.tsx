@@ -12,9 +12,38 @@ import { ThemedHeader } from "@/components/ui/ThemedHeader";
 import { router } from "expo-router";
 import { useIsFocused } from "@react-navigation/native";
 import CameraScreen from "@/components/ui/CameraScreen";
-import { formatInputForSearch } from "@/hooks/formating";
 import { supabase } from "@/utils/supabase";
 import { useAccessControl } from "@/hooks/useAccessControl";
+
+// Helper functions inlined
+const formatAtmNum = (atmNum: string): string => {
+  const atmLimpo = String(atmNum || '').replace(/[^a-zA-Z0-9]/g, '');
+  let resultado = atmLimpo.slice(0, 3);
+  if (atmLimpo.length > 3) resultado += ' ' + atmLimpo.slice(3, 9);
+  if (atmLimpo.length > 9) resultado += ' ' + atmLimpo.slice(9, 10);
+  return resultado;
+}
+
+const formatPatNum = (patNum: string): string => {
+  const digitosApenas = String(patNum || '').replace(/[^0-9]/g, '');
+  if (!digitosApenas && digitosApenas.length > 10) return '';
+  const digitosLimitados = digitosApenas.slice(0, 10);
+  const numeroPreenchido = digitosLimitados.padStart(10, '0');
+  const parte1 = numeroPreenchido.substring(0, 9);
+  const parte2 = numeroPreenchido.substring(9);
+  return `${parte1}-${parte2}`;
+}
+
+const formatInputForSearch = (input: string): string => {
+  const cleanedInput = String(input || '').replace(/[^a-zA-Z0-9]/g, '');
+  const hasLetters = /[a-zA-Z]/.test(cleanedInput);
+  let formattedResult = '';
+  if (hasLetters) formattedResult = formatAtmNum(input);
+  else formattedResult = formatPatNum(input);
+
+  if (formattedResult === '') Alert.alert("Erro de Formatação", "O número inserido não é um formato de ATM ou Patrimônio válido.");
+  return formattedResult;
+};
 
 const PermissionButton = ({ owner_id }: { owner_id: string }) => {
   const [isOwner, setIsOwner] = useState(false);
@@ -32,7 +61,7 @@ const PermissionButton = ({ owner_id }: { owner_id: string }) => {
   if (!isOwner) return null;
 
   return (
-    <ThemedButton 
+    <ThemedButton
       onPress={() => { console.log("Editar permissões") }}
       style={{ marginTop: 10 }}
     >
@@ -64,7 +93,7 @@ const PatrimonioCard = ({ item, onEdit, isEditable }: { item: any, onEdit: (id: 
     <ThemedView style={styles.patrimonioContainer}>
       <ScrollView showsVerticalScrollIndicator={true} nestedScrollEnabled={true}>
         <View style={styles.imageContainer}>
-          {isLoading ? <ActivityIndicator color="#fff"/> : imageUrl && (
+          {isLoading ? <ActivityIndicator color="#fff" /> : imageUrl && (
             <Image source={{ uri: imageUrl }} style={{ height: 200, width: '100%' }} contentFit="contain" />
           )}
         </View>
@@ -75,17 +104,17 @@ const PatrimonioCard = ({ item, onEdit, isEditable }: { item: any, onEdit: (id: 
 
           // Tratamento Especial para o Responsável (owner_id)
           if (key === 'owner_id') {
-              return (
-                <View style={styles.detailRow} key={key}>
-                  <View style={styles.labelContainer}>
-                    <ThemedText style={styles.label}>{labelPatrimonio[key]}:</ThemedText>
-                  </View>
-                  <View style={styles.dataContainer}>
-                    {/* Aqui mostramos o nome que veio do Join (dono.full_name) e não o UUID */}
-                    <ThemedText style={styles.data}>{item.dono?.full_name || "Não definido"}</ThemedText>
-                  </View>
+            return (
+              <View style={styles.detailRow} key={key}>
+                <View style={styles.labelContainer}>
+                  <ThemedText style={styles.label}>{labelPatrimonio[key]}:</ThemedText>
                 </View>
-              );
+                <View style={styles.dataContainer}>
+                  {/* Aqui mostramos o nome que veio do Join (dono.full_name) e não o UUID */}
+                  <ThemedText style={styles.data}>{item.dono?.full_name || "Não definido"}</ThemedText>
+                </View>
+              </View>
+            );
           }
 
           // Campos Padrões
@@ -102,8 +131,8 @@ const PatrimonioCard = ({ item, onEdit, isEditable }: { item: any, onEdit: (id: 
         })}
 
         <View style={styles.detailRow}>
-            <ThemedText style={styles.label}>Última Edição: </ThemedText>
-            <ThemedText style={styles.data}>{item.lastEditedBy} - {new Date(item.lastEditedAt).toLocaleDateString()}</ThemedText>
+          <ThemedText style={styles.label}>Última Edição: </ThemedText>
+          <ThemedText style={styles.data}>{item.lastEditedBy} - {new Date(item.lastEditedAt).toLocaleDateString()}</ThemedText>
         </View>
 
         {isEditable ? (
@@ -114,7 +143,7 @@ const PatrimonioCard = ({ item, onEdit, isEditable }: { item: any, onEdit: (id: 
         ) : (
           <View style={{ alignItems: 'center', opacity: 0.5, padding: 10 }}>
             <Ionicons name="lock-closed" size={20} color="white" />
-            <ThemedText style={{fontSize:12}}>Somente Leitura</ThemedText>
+            <ThemedText style={{ fontSize: 12 }}>Somente Leitura</ThemedText>
           </View>
         )}
 
@@ -130,12 +159,12 @@ export default function listing() {
   const [patrimonioList, setPatrimonioList] = useState<any[]>([]);
   const [scanBool, setScanBool] = useState(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
-  
+
   const { canEdit } = useAccessControl();
-  const { width } = useWindowDimensions(); 
-  const CARD_WIDTH = width * 0.85; 
+  const { width } = useWindowDimensions();
+  const CARD_WIDTH = width * 0.85;
   const CARD_MARGIN = 10;
-  const SNAP_INTERVAL = CARD_WIDTH + (CARD_MARGIN * 2); 
+  const SNAP_INTERVAL = CARD_WIDTH + (CARD_MARGIN * 2);
   const SIDE_SPACING = (width - CARD_WIDTH) / 2 - CARD_MARGIN;
 
   const searchTypes = Object.entries(labelPatrimonio)
@@ -155,14 +184,14 @@ export default function listing() {
       try {
         let formatSearch = search;
         if (filter === "patNum" || filter === "atmNum") formatSearch = formatInputForSearch(search);
-        
+
         // --- BUSCA COM JOIN ---
         // Trazemos tudo de patrimonios E o full_name da tabela profiles referenciada pelo owner_id
         const { data, error } = await supabase
           .from('patrimonios')
-          .select('*, dono:profiles(full_name)') 
+          .select('*, dono:profiles(full_name)')
           .ilike(filter, `%${formatSearch}%`);
-        
+
         if (error) throw error;
         if (!data || data.length === 0) return Alert.alert("Nenhum patrimônio encontrado.");
         setPatrimonioList(data);
@@ -191,17 +220,17 @@ export default function listing() {
       <ThemedHeader title="Pesquisar" onPressIcon={() => router.push('/settings')} />
       <View>
         <ThemedView style={styles.row}>
-            <ThemedTextInput 
-                placeholder="Pesquisar..." 
-                value={search} 
-                onChangeText={setSearch} 
-                style={styles.input} 
-                filterData={searchTypes} 
-                filterValue={filter} 
-                onFilterChange={(item) => setFilter(item.value)} 
-                iconName="magnify" 
-                onIconPress={fetchPatrimonio} 
-            />
+          <ThemedTextInput
+            placeholder="Pesquisar..."
+            value={search}
+            onChangeText={setSearch}
+            style={styles.input}
+            filterData={searchTypes}
+            filterValue={filter}
+            onFilterChange={(item: any) => setFilter(item.value)}
+            iconName="magnify"
+            onIconPress={fetchPatrimonio}
+          />
         </ThemedView>
         <ThemedButton onPress={() => setScanBool(true)}><ThemedText>Escanear</ThemedText></ThemedButton>
       </View>
@@ -219,7 +248,7 @@ export default function listing() {
         keyExtractor={(item) => item.id.toString()}
         horizontal={true}
         showsHorizontalScrollIndicator={false}
-        
+
         // Dynamic Spacing Logic
         contentContainerStyle={{
           paddingHorizontal: SIDE_SPACING,
@@ -229,7 +258,7 @@ export default function listing() {
         snapToInterval={SNAP_INTERVAL}
         snapToAlignment="center"
         decelerationRate="fast"
-        ListEmptyComponent={<ThemedText style={{textAlign:'center', marginTop:20}}>Sem resultados</ThemedText>}
+        ListEmptyComponent={<ThemedText style={{ textAlign: 'center', marginTop: 20 }}>Sem resultados</ThemedText>}
       />
     </ThemedView>
   );
@@ -255,18 +284,18 @@ const styles = StyleSheet.create({
   },
   renderContainer: {
     // Width and Margin are now handled dynamically in renderItem
-    height: '100%', 
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
   },
   patrimonioContainer: {
     width: "100%",
-    height: "100%", 
+    height: "100%",
     backgroundColor: "#7d7d7d",
     borderRadius: 15,
     padding: 15,
     elevation: 5,
-    overflow: 'hidden', 
+    overflow: 'hidden',
   },
   imageContainer: {
     width: '100%',

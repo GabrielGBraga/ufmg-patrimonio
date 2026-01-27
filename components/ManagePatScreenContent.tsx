@@ -1,25 +1,103 @@
-import { ActivityIndicator, Alert, Image, StyleSheet, View, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+
+import { ActivityIndicator, Alert, Image, StyleSheet, View, KeyboardAvoidingView, Platform, ScrollView, Text } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { ThemedView } from "@/components/ui/ThemedView";
 import { ThemedButton } from "@/components/ui/ThemedButton";
 import { ScrollableAreaView } from "@/components/layout/ScrollableAreaView";
-import { TextInputGroup } from "@/components/TextInputGroup";
 import { CheckboxGroup } from "@/components/CheckboxGroup";
 import { deleteImage, getImage, uploadImage } from "@/hooks/ImageHandler";
-import { patrimonio, Patrimonio } from "@/constants/Patrimonio"; // Sua constante atualizada
+import { patrimonio, Patrimonio } from "@/constants/Patrimonio";
 import { ThemedHeader } from '@/components/ui/ThemedHeader';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import CameraScreen from '@/components/ui/CameraScreen';
-import { formatAtmNum, formatPatNum } from '@/hooks/formating';
 import { supabase } from '@/utils/supabase';
+import { ThemedTextInput } from './ui/ThemedTextInput';
+import { ThemedSwitch } from './ui/ThemedSwitch';
+
+// Helper formatting functions moved from hooks/formating
+const formatAtmNum = (atmNum: string): string => {
+    const atmLimpo = String(atmNum || '').replace(/[^a-zA-Z0-9]/g, '');
+    let resultado = atmLimpo.slice(0, 3);
+    if (atmLimpo.length > 3) resultado += ' ' + atmLimpo.slice(3, 9);
+    if (atmLimpo.length > 9) resultado += ' ' + atmLimpo.slice(9, 10);
+    return resultado;
+}
+
+const formatPatNum = (patNum: string): string => {
+    const digitosApenas = String(patNum || '').replace(/[^0-9]/g, '');
+    if (!digitosApenas && digitosApenas.length > 10) return '';
+    const digitosLimitados = digitosApenas.slice(0, 10);
+    const numeroPreenchido = digitosLimitados.padStart(10, '0');
+    const parte1 = numeroPreenchido.substring(0, 9);
+    const parte2 = numeroPreenchido.substring(9);
+    return `${parte1}-${parte2}`;
+}
+
+// Helper to ensure numeric strings for generic validation
+const numericString = z.string().regex(/^\d+([.,]\d+)?$/, "Deve ser um número");
+
+const schema = z.object({
+    patNum: z.preprocess(
+        (val) => formatPatNum(String(val || '')), // Preprocess using existing hook logic
+        z.string().optional()
+    ),
+    atmNum: z.preprocess(
+        (val) => formatAtmNum(String(val || '')), // Preprocess using existing hook logic
+        z.string().optional()
+    ),
+    descricao: z.string().min(1, "Descrição é obrigatória"),
+    sala: numericString.min(1, "Sala é obrigatória"), // Enforcing numeric string
+    responsavel: z.string().email("Email inválido").min(1, "Responsável é obrigatório"),
+    valor: numericString.min(1, "Valor é obrigatório"), // Enforcing numeric string
+    conservacao: z.string().min(1, "Estado de conservação é obrigatório"),
+}).superRefine((data, ctx) => {
+    // 1. Check exclusivity/requirement
+    const hasPat = !!data.patNum && data.patNum.length > 0;
+    const hasAtm = !!data.atmNum && data.atmNum.length > 0;
+
+    if (!hasPat && !hasAtm) {
+        ctx.addIssue({
+            code: "custom",
+            message: "Preencha pelo menos o Número de Patrimônio ou ATM",
+            path: ["patNum"],
+        });
+    }
+
+    // 2. Validate Formats STRICTLY if present
+    // patNum should be XXXXXXXXX-X (matches output of formatPatNum if valid)
+    if (hasPat) {
+        if (!/^\d{9}-\d$/.test(data.patNum || '')) {
+            ctx.addIssue({
+                code: "custom",
+                message: "Patrimônio inválido (XXXXXXXXX-X)",
+                path: ["patNum"],
+            });
+        }
+    }
+
+    // atmNum should be XXX XXXXXX X
+    if (hasAtm) {
+        if (!/^[A-Za-z0-9]{3} [A-Za-z0-9]{6} [A-Za-z0-9]{1}$/.test(data.atmNum || '')) {
+            ctx.addIssue({
+                code: "custom",
+                message: "ATM inválido (XXX XXXXXX X)",
+                path: ["atmNum"],
+            });
+        }
+    }
+});
+
+type FormData = z.infer<typeof schema>;
 
 export default function ManagePatScreenContent() {
 
     const params = useLocalSearchParams();
     const mode = (params.mode as string) || 'add';
-    const docId = params.id as string || params.patrimonioId as string;
+    const docId = params.id as string;
 
     const title = mode === "edit" ? 'Editar Patrimônio' : "Adicionar Patrimônio";
     const headerIcon = mode === "edit" ? 'back' : 'settings';
@@ -30,37 +108,49 @@ export default function ManagePatScreenContent() {
         return (await supabase.auth.getUser()).data.user;
     }
 
-    // Estado do formulário seguindo estritamente o tipo Patrimonio
-    const [formData, setFormData] = useState<Patrimonio | null>(mode === 'add' ? patrimonio : null);
-
-    // Estado separado para o INPUT de Email (já que owner_id é UUID)
-    const [ownerEmailInput, setOwnerEmailInput] = useState('');
+    const { control, handleSubmit, formState: { errors }, setValue, reset, watch } = useForm<FormData>({
+        resolver: zodResolver(schema),
+        defaultValues: {
+            patNum: '',
+            atmNum: '',
+            descricao: '',
+            sala: '',
+            responsavel: '',
+            valor: '',
+            conservacao: '',
+        }
+    });
 
     const [image, setImage] = useState<string | null>(null);
-    const [boolAtm, setBoolAtm] = useState(false);
+    const [imageHeight, setImageHeight] = useState(0);
+    const [imageWidth, setImageWidth] = useState(0);
+    const [imageFileName, setImageFileName] = useState<string | null>(null);
+
     const [loading, setLoading] = useState(mode === 'edit');
     const [imageCancel, setImageCancel] = useState(false);
     const [scanBool, setScanBool] = useState(false);
+    const [boolAtm, setBoolAtm] = useState(false); // Controls visibility of ATM input
 
     // Controle de permissão visual
     const [isOwner, setIsOwner] = useState(true);
 
-    const { control, handleSubmit, formState: { errors }, setValue } = useForm();
+    const watchedConservacao = watch('conservacao');
 
     // Inicialização para Modo ADICIONAR
     useEffect(() => {
         if (mode === 'add') {
             const initAdd = async () => {
                 const currentUser = await user();
-                // Define o email visual como o do usuário atual
-                setOwnerEmailInput(currentUser?.email || '');
-
-                // Define o ID técnico
-                setFormData({
+                reset({
                     ...patrimonio,
-                    owner_id: currentUser?.id || ''
+                    responsavel: currentUser?.email || '',
+                    conservacao: '',
+                    patNum: '',
+                    atmNum: '',
+                    descricao: '',
+                    sala: '',
+                    valor: ''
                 });
-
                 setImage(null);
                 setLoading(false);
                 setIsOwner(true);
@@ -74,11 +164,17 @@ export default function ManagePatScreenContent() {
         if (mode === 'edit' && docId) {
             const fetchPatrimonioData = async () => {
                 setLoading(true);
-                // Busca apenas os campos que existem na tabela
                 const { data, error } = await supabase
                     .from('patrimonios')
-                    .select() // Select simples traz as colunas reais
+                    .select()
                     .eq('id', docId);
+
+                if (error) {
+                    Alert.alert("Erro", "Erro ao buscar patrimônio.");
+                    console.error("Error fetching patrimonio: ", error);
+                    router.back();
+                    return;
+                }
 
                 try {
                     if (data && data.length > 0) {
@@ -89,7 +185,7 @@ export default function ManagePatScreenContent() {
                         const isUserOwner = patrimonioData.owner_id === currentUser?.id;
                         setIsOwner(isUserOwner);
 
-                        // 2. Busca o EMAIL baseado no UUID do owner_id para preencher o input visual
+                        // 2. Busca o EMAIL baseado no UUID do owner_id
                         let emailDisplay = '';
                         if (patrimonioData.owner_id) {
                             const { data: profile } = await supabase
@@ -101,8 +197,26 @@ export default function ManagePatScreenContent() {
                             if (profile) emailDisplay = profile.email || '';
                         }
 
-                        setOwnerEmailInput(emailDisplay);
-                        setFormData(patrimonioData);
+                        // Preenche o form
+                        reset({
+                            patNum: patrimonioData.patNum,
+                            atmNum: patrimonioData.atmNum,
+                            descricao: patrimonioData.descricao,
+                            sala: patrimonioData.sala,
+                            valor: patrimonioData.valor,
+                            responsavel: emailDisplay,
+                            conservacao: patrimonioData.conservacao
+                        });
+
+                        // ATM Switch logic
+                        if (patrimonioData.atmNum) {
+                            setBoolAtm(true);
+                        }
+
+                        // Image handling
+                        setImageFileName(patrimonioData.image?.fileName || null);
+                        setImageHeight(patrimonioData.image?.height || 0);
+                        setImageWidth(patrimonioData.image?.width || 0);
 
                         if (patrimonioData.image?.fileName) {
                             const { data: imgData } = await supabase
@@ -126,25 +240,32 @@ export default function ManagePatScreenContent() {
         }
     }, [mode, docId]);
 
-    // Lógica ATM Switch
-    useEffect(() => {
-        if (formData?.atmNum != '') {
-            setBoolAtm(true)
-        }
-    }, [formData?.atmNum])
 
     const handleCheckboxChange = (value: string) => {
-        setFormData((prevState) => prevState ? { ...prevState, conservacao: value === prevState.conservacao ? '' : value } : null);
+        const current = watchedConservacao;
+        setValue('conservacao', value === current ? '' : value, { shouldValidate: true });
     };
 
     const resetImage = async () => {
         setImage(null);
         setImageCancel(true);
+        setImageFileName(null);
     };
 
     const checkExistingPat = async (patNum: string, atmNum: string): Promise<string | null | false> => {
         if (!(await user())) return false;
         try {
+            // Need to handle empty strings for query logic
+            let query = `patNum.eq.${patNum}`;
+            if (atmNum) {
+                query += `,atmNum.eq.${atmNum}`;
+            }
+
+            // Using OR logic if both exist, but if atmNum is empty we shouldn't query it like that if we want strict check
+            // The original logic was: .or(`patNum.eq.${patNum},atmNum.eq.${atmNum}`);
+            // If atmNum is empty string in DB and we pass empty string, it might match all empty ones?
+            // Actually original code checked: if (patNumExists && patNum !== '')
+
             const { data, error } = await supabase
                 .from('patrimonios')
                 .select('patNum, atmNum')
@@ -153,6 +274,7 @@ export default function ManagePatScreenContent() {
             if (error || !data || data.length === 0) return null;
             const patNumExists = data.some(item => item.patNum === patNum) && patNum !== '';
             const atmNumExists = data.some(item => item.atmNum === atmNum) && atmNum !== '';
+
             if (patNumExists && atmNumExists) return "both";
             if (patNumExists) return "patNum";
             if (atmNumExists) return "atmNum";
@@ -162,42 +284,6 @@ export default function ManagePatScreenContent() {
         }
     }
 
-    // Configuração dos Inputs
-    // Mapeamos os campos do Patrimonio, mas substituímos a lógica do owner_id pelo input de email
-    const inputs = formData ? [
-        { label: 'Número de Patrimônio', placeholder: 'Digite o número', key: 'patNum' },
-        { label: 'Número ATM', placeholder: 'Digite o número ATM', key: 'atmNum', isSwitch: true, switchKey: boolAtm },
-        { label: 'Descrição', placeholder: 'Descrição do item', key: 'descricao' },
-        { label: 'Valor', placeholder: 'Valor em R$', key: 'valor' },
-        { label: 'Sala', placeholder: 'Número da sala', key: 'sala' },
-        // Campo Especial: Email do Responsável (Manipula estado separado)
-        {
-            label: 'Responsável (Email)',
-            placeholder: 'email@ufmg.br',
-            key: 'owner_email_visual', // Chave fictícia para o map
-            customValue: ownerEmailInput, // Valor visual
-            customOnChange: (text: string) => setOwnerEmailInput(text), // Setter visual
-            enabled: isOwner,
-            keyboardType: 'email-address'
-        },
-    ].map((config) => ({
-        label: config.label,
-        placeholder: config.placeholder,
-        // Se for o campo especial, usa a lógica customizada, senão usa o formData padrão
-        inputValue: config.key === 'owner_email_visual'
-            ? config.customValue
-            : formData[config.key as keyof Patrimonio] as string,
-        onInputChange: config.key === 'owner_email_visual'
-            ? config.customOnChange
-            : (text: string) => setFormData(prevState => prevState ? { ...prevState, [config.key]: text } : null),
-        isSwitch: config.isSwitch || false,
-        switchValue: config.isSwitch ? boolAtm : false,
-        onSwitchChange: config.isSwitch ? (value: boolean) => setBoolAtm(value) : () => { },
-        editable: (config as any).editable !== undefined ? (config as any).editable : true,
-        keyboardType: (config as any).keyboardType || 'default',
-        enabled: config.enabled !== undefined ? config.enabled : true,
-    })) : [];
-
     const deletePatrimonio = async () => {
         if (docId) {
             Alert.alert("Confirmar Exclusão", "Deseja deletar?", [
@@ -205,7 +291,7 @@ export default function ManagePatScreenContent() {
                 {
                     text: "Deletar", style: "destructive", onPress: async () => {
                         setLoading(true);
-                        if (formData?.image?.fileName) await deleteImage(formData.image.fileName);
+                        if (imageFileName) await deleteImage(imageFileName);
                         await supabase.from('patrimonios').delete().eq('id', docId);
                         router.back();
                     }
@@ -218,21 +304,22 @@ export default function ManagePatScreenContent() {
         const result = await getImage(type);
         if (result) {
             setImage(result.uri);
-            setFormData(prev => prev ? {
-                ...prev,
-                image: { ...prev.image, fileName: prev.image?.fileName || '', height: result.height, width: result.width }
-            } : null);
+            setImageHeight(result.height);
+            setImageWidth(result.width);
         }
     };
 
-    const onSubmit = async () => {
-        if (!formData || !(await user())) return Alert.alert('Erro', 'Dados inválidos.');
-        if (!formData.patNum && !formData.atmNum) return Alert.alert('Erro', 'Preencha identificação.');
-        if (!formData.conservacao) return Alert.alert('Erro', 'Selecione conservação.');
+    const onSubmit = async (data: FormData) => {
+        if (!(await user())) return Alert.alert('Erro', 'Usuário não autenticado.');
         if (!image) return Alert.alert('Erro', 'Adicione imagem.');
 
-        let patFormat = formatPatNum(formData.patNum);
-        let atmFormat = formatAtmNum(formData.atmNum);
+        let patFormat = data.patNum ? formatPatNum(data.patNum) : '';
+        let atmFormat = data.atmNum ? formatAtmNum(data.atmNum) : '';
+
+        // Se boolAtm for falso, garantimos que atmNum seja vazio
+        if (!boolAtm) {
+            atmFormat = '';
+        }
 
         if (mode === 'add') {
             const result = await checkExistingPat(patFormat, atmFormat);
@@ -245,11 +332,10 @@ export default function ManagePatScreenContent() {
             const currentUser = await user();
 
             // 1. RESOLVER O DONO (Email -> UUID)
-            // Começamos com o dono atual (ou eu no add)
             let finalOwnerId = mode === 'add' ? currentUser?.id : undefined;
 
-            if (ownerEmailInput && isOwner) {
-                const emailTrimmed = ownerEmailInput.trim();
+            if (data.responsavel && isOwner) {
+                const emailTrimmed = data.responsavel.trim();
                 // Só busca se mudou algo ou se é novo
                 if (emailTrimmed !== currentUser?.email || mode === 'add') {
                     const { data: profile } = await supabase
@@ -261,48 +347,50 @@ export default function ManagePatScreenContent() {
                     if (profile) {
                         finalOwnerId = profile.id;
                     } else {
-                        // Se não achou o email digitado, mantém o anterior (ou eu no add) e avisa
                         Alert.alert("Aviso", "Email não encontrado. O responsável não foi alterado.");
                         if (mode === 'add') finalOwnerId = currentUser?.id;
-                        // No edit, se finalOwnerId for undefined, ele simplesmente não atualiza o campo
                     }
                 }
             }
 
             // 2. TRATAMENTO DE IMAGEM
-            let imageFileName = formData.image?.fileName;
-            if (mode === 'edit' && formData.image?.fileName && imageCancel) {
-                await deleteImage(formData.image.fileName);
+            let finalImageFileName = imageFileName;
+
+            // Se cancelou imagem antiga no edit
+            if (mode === 'edit' && imageFileName && imageCancel) {
+                // Assuming logic: if we have a new image or removed it, we delete old ref
+                // Actually existing logic was: if cancel, delete.
+                // But wait, if we select NEW image, we should upload it.
+                // If we just removed, image is null -> blocked by check above.
+                // So we definitely have an image uri.
+                await deleteImage(imageFileName);
+                finalImageFileName = null; // will be replaced
             }
-            if (mode === "add" || imageCancel) {
+
+            if (mode === "add" || imageCancel || !imageFileName) {
+                // Upload new image
                 const uploadName = await uploadImage(image);
-                if (uploadName) imageFileName = uploadName;
+                if (uploadName) finalImageFileName = uploadName;
                 else throw new Error("Falha upload imagem");
             }
 
-            // 3. CONSTRUÇÃO DO OBJETO FINAL (AQUI EVITAMOS O ERRO DE COLUNA INEXISTENTE)
-            // Criamos um objeto limpo, campo a campo, compatível com o banco
+            // 3. DATA OBJECT
             const dataToSave: any = {
                 patNum: patFormat,
                 atmNum: atmFormat,
-                descricao: formData.descricao,
-                valor: formData.valor,
-                sala: formData.sala,
-                conservacao: formData.conservacao,
-
-                // Imagem (JSONB)
+                descricao: data.descricao,
+                valor: data.valor,
+                sala: data.sala,
+                conservacao: data.conservacao,
                 image: {
-                    fileName: imageFileName,
-                    width: formData.image?.width || 0,
-                    height: formData.image?.height || 0
+                    fileName: finalImageFileName,
+                    width: imageWidth,
+                    height: imageHeight
                 },
-
-                // Auditoria
                 lastEditedBy: currentUser?.email || 'N/A',
                 lastEditedAt: new Date().toISOString(),
             };
 
-            // Injeta owner_id apenas se tiver valor definido
             if (finalOwnerId) {
                 dataToSave.owner_id = finalOwnerId;
             }
@@ -319,9 +407,9 @@ export default function ManagePatScreenContent() {
             Alert.alert('Sucesso', mode === "add" ? 'Adicionado!' : 'Atualizado!');
             if (router.canGoBack()) router.back();
             else {
-                setFormData(patrimonio);
+                reset();
                 setImage(null);
-                setOwnerEmailInput(currentUser?.email || '');
+                // reset to default
             }
 
         } catch (error: any) {
@@ -333,7 +421,6 @@ export default function ManagePatScreenContent() {
     };
 
     if (loading) return <ThemedView style={{ flex: 1, justifyContent: 'center' }}><ActivityIndicator size="large" /></ThemedView>;
-    if (!formData) return null;
 
     if (scanBool) {
         return (
@@ -341,8 +428,7 @@ export default function ManagePatScreenContent() {
                 <ThemedHeader title="Escanear Patrimônio" onPressIcon={() => setScanBool(false)} variant='back' />
                 <CameraScreen
                     onBarcodeScanned={({ data }) => {
-                        setValue('Número de Patrimônio', data);
-                        setFormData(prevState => prevState ? { ...prevState, patNum: data } : null);
+                        setValue('patNum', data, { shouldValidate: true });
                         setScanBool(false);
                     }}
                 />
@@ -372,8 +458,149 @@ export default function ManagePatScreenContent() {
 
                     <ThemedButton onPress={() => setScanBool(true)}><ThemedText>Escanear Código</ThemedText></ThemedButton>
 
-                    <TextInputGroup inputs={inputs as any} control={control} errors={errors} />
-                    <CheckboxGroup selectedCheckbox={formData.conservacao} onCheckboxChange={handleCheckboxChange} />
+                    <ThemedView style={styles.formContainer}>
+                        {/* patNum */}
+                        <Controller
+                            control={control}
+                            name="patNum"
+                            render={({ field: { onChange, value, onBlur: fieldOnBlur } }) => (
+                                <View style={styles.inputWrapper}>
+                                    <ThemedTextInput
+                                        placeholder="Número de Patrimônio"
+                                        value={value}
+                                        onChangeText={onChange}
+                                        onBlur={() => {
+                                            fieldOnBlur();
+                                            if (value) {
+                                                const formatted = formatPatNum(value);
+                                                onChange(formatted);
+                                            }
+                                        }}
+                                        style={styles.textInput}
+                                    />
+                                    <Text style={{ fontSize: 10, color: 'gray', marginLeft: 4 }}>Zeros à esquerda serão adicionados automaticamente.</Text>
+                                    {errors.patNum && <Text style={styles.errorText}>{errors.patNum.message}</Text>}
+                                </View>
+                            )}
+                        />
+
+                        {/* atmNum with Switch */}
+                        <View style={styles.inputWrapper}>
+                            <View style={styles.switchContainer}>
+                                <ThemedText>Possui número ATM?</ThemedText>
+                                <ThemedSwitch
+                                    value={boolAtm}
+                                    onValueChange={(val) => {
+                                        setBoolAtm(val);
+                                        if (!val) setValue('atmNum', '');
+                                    }}
+                                />
+                            </View>
+                            {boolAtm && (
+                                <Controller
+                                    control={control}
+                                    name="atmNum"
+                                    render={({ field: { onChange, value, onBlur: fieldOnBlur } }) => (
+                                        <>
+                                            <ThemedTextInput
+                                                placeholder="Número ATM"
+                                                value={value}
+                                                onChangeText={onChange}
+                                                onBlur={() => {
+                                                    fieldOnBlur();
+                                                    if (value) {
+                                                        const formatted = formatAtmNum(value);
+                                                        onChange(formatted);
+                                                    }
+                                                }}
+                                                style={styles.textInput}
+                                            />
+                                            {errors.atmNum && <Text style={styles.errorText}>{errors.atmNum.message}</Text>}
+                                        </>
+                                    )}
+                                />
+                            )}
+                        </View>
+
+                        {/* descricao */}
+                        <Controller
+                            control={control}
+                            name="descricao"
+                            render={({ field: { onChange, value } }) => (
+                                <View style={styles.inputWrapper}>
+                                    <ThemedTextInput
+                                        placeholder="Descrição"
+                                        value={value}
+                                        onChangeText={onChange}
+                                        style={styles.textInput}
+                                    />
+                                    {errors.descricao && <Text style={styles.errorText}>{errors.descricao.message}</Text>}
+                                </View>
+                            )}
+                        />
+
+                        {/* valor and sala row */}
+                        <View style={{ flexDirection: 'row', gap: 10 }}>
+                            {/* valor */}
+                            <Controller
+                                control={control}
+                                name="valor"
+                                render={({ field: { onChange, value } }) => (
+                                    <View style={[styles.inputWrapper, { flex: 1 }]}>
+                                        <ThemedTextInput
+                                            placeholder="Valor em R$"
+                                            value={value}
+                                            onChangeText={onChange}
+                                            keyboardType='numeric'
+                                            style={styles.textInput}
+                                        />
+                                        {errors.valor && <Text style={styles.errorText}>{errors.valor.message}</Text>}
+                                    </View>
+                                )}
+                            />
+
+                            {/* sala */}
+                            <Controller
+                                control={control}
+                                name="sala"
+                                render={({ field: { onChange, value } }) => (
+                                    <View style={[styles.inputWrapper, { flex: 1 }]}>
+                                        <ThemedTextInput
+                                            placeholder="Sala (número)"
+                                            value={value}
+                                            onChangeText={onChange}
+                                            keyboardType='numeric'
+                                            style={styles.textInput}
+                                        />
+                                        {errors.sala && <Text style={styles.errorText}>{errors.sala.message}</Text>}
+                                    </View>
+                                )}
+                            />
+                        </View>
+
+                        {/* responsavel */}
+                        <Controller
+                            control={control}
+                            name="responsavel"
+                            render={({ field: { onChange, value } }) => (
+                                <View style={styles.inputWrapper}>
+                                    <ThemedTextInput
+                                        placeholder="Responsável (Email)"
+                                        value={value}
+                                        onChangeText={onChange}
+                                        editable={isOwner}
+                                        keyboardType='email-address'
+                                        style={[styles.textInput, !isOwner && { opacity: 0.5 }]}
+                                    />
+                                    {errors.responsavel && <Text style={styles.errorText}>{errors.responsavel.message}</Text>}
+                                </View>
+                            )}
+                        />
+
+                    </ThemedView>
+
+                    <CheckboxGroup selectedCheckbox={watchedConservacao} onCheckboxChange={handleCheckboxChange} />
+                    {errors.conservacao && <Text style={[styles.errorText, { marginLeft: 10 }]}>{errors.conservacao.message}</Text>}
 
                     {mode === "edit" && (
                         <ThemedButton style={styles.deleteButton} onPress={deletePatrimonio}><ThemedText>Deletar</ThemedText></ThemedButton>
@@ -393,4 +620,9 @@ const styles = StyleSheet.create({
     image: { margin: 10, borderRadius: 8 },
     button: { paddingVertical: 14, paddingHorizontal: 24, margin: 10, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
     deleteButton: { paddingVertical: 14, paddingHorizontal: 24, margin: 10, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: '#dc3545' },
+    formContainer: { marginBottom: 20 },
+    inputWrapper: { marginBottom: 16, width: '100%' },
+    textInput: { height: 48, borderColor: 'transparent', borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, marginTop: 8 },
+    errorText: { color: 'red', fontSize: 12, marginTop: 4 },
+    switchContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }
 });
