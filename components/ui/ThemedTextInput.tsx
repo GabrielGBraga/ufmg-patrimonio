@@ -9,7 +9,7 @@ export type ThemedTextInputProps<T = any> = TextInputProps & {
     darkColor?: string;
     iconName?: string;
     onIconPress?: () => void;
-    
+
     // Props do Filtro
     filterData?: T[];
     filterValue?: string | null;
@@ -20,30 +20,32 @@ export type ThemedTextInputProps<T = any> = TextInputProps & {
     filterWidth?: number;
 };
 
-export function ThemedTextInput<T = any>({
-    style,
-    lightColor,
-    darkColor,
-    iconName = 'none',
-    onIconPress,
-    
-    filterData,
-    filterValue,
-    filterLabelField = 'label' as keyof T,
-    filterValueField = 'value' as keyof T,
-    onFilterChange,
-    filterPlaceholder,
-    filterWidth = 145, // Largura padrão ajustada
-    
-    ...otherProps
-}: ThemedTextInputProps<T>) {
+export const ThemedTextInput = React.forwardRef(function ThemedTextInput<T = any>(
+    {
+        style,
+        lightColor,
+        darkColor,
+        iconName = 'none',
+        onIconPress,
+
+        filterData,
+        filterValue,
+        filterLabelField = 'label' as keyof T,
+        filterValueField = 'value' as keyof T,
+        onFilterChange,
+        filterPlaceholder,
+        filterWidth = 145,
+
+        ...otherProps
+    }: ThemedTextInputProps<T>,
+    ref: React.Ref<any>
+) {
     // Cores Principais
     const contentColor = useThemeColor({ light: lightColor, dark: darkColor }, 'text');
     const borderColor = useThemeColor({ light: lightColor, dark: darkColor }, 'inputBorder');
     const backgroundColor = useThemeColor({ light: lightColor, dark: darkColor }, 'inputBackground');
 
     // Cor da "Caixinha" do Dropdown (Cinza suave adaptativo)
-    // Se você não tiver a key 'dropdownBackground' no seu tema, ele usará os hexadecimais padrão abaixo
     const dropdownBackgroundColor = useThemeColor({ light: lightColor, dark: darkColor }, 'dropdownBackground');
 
     const [isFocused, setIsFocused] = useState(false);
@@ -53,9 +55,9 @@ export function ThemedTextInput<T = any>({
 
         return (
             <View style={[
-                styles.filterWrapper, 
-                { 
-                    width: filterWidth, 
+                styles.filterWrapper,
+                {
+                    width: filterWidth,
                     backgroundColor: dropdownBackgroundColor, // Cor de fundo da caixinha
                 }
             ]}>
@@ -64,7 +66,7 @@ export function ThemedTextInput<T = any>({
                     placeholderStyle={{ color: contentColor, fontSize: 13, fontWeight: '500' }}
                     selectedTextStyle={{ color: contentColor, fontSize: 13, fontWeight: '500' }}
                     // Ícone menor para caber na caixinha
-                    iconStyle={{ width: 18, height: 18, tintColor: contentColor }} 
+                    iconStyle={{ width: 18, height: 18, tintColor: contentColor }}
                     containerStyle={{
                         backgroundColor: backgroundColor, // Menu aberto continua com a cor do input
                         borderColor: borderColor,
@@ -73,7 +75,7 @@ export function ThemedTextInput<T = any>({
                     }}
                     itemTextStyle={{ color: contentColor, fontSize: 14 }}
                     activeColor={borderColor}
-                    
+
                     data={filterData}
                     labelField={filterLabelField as string}
                     valueField={filterValueField as string}
@@ -88,13 +90,13 @@ export function ThemedTextInput<T = any>({
     };
 
     return (
-        <View 
+        <View
             style={[
-                styles.container, 
-                { 
+                styles.container,
+                {
                     backgroundColor: backgroundColor,
                     borderColor: isFocused ? borderColor : borderColor,
-                    borderWidth: 1, 
+                    borderWidth: 1,
                 },
                 style
             ]}
@@ -102,7 +104,8 @@ export function ThemedTextInput<T = any>({
             {renderFilter()}
 
             <TextInput
-                mode="flat" 
+                ref={ref}
+                mode="flat"
                 underlineColor="transparent"
                 activeUnderlineColor="transparent"
                 placeholderTextColor={contentColor}
@@ -124,6 +127,7 @@ export function ThemedTextInput<T = any>({
                         placeholder: contentColor,
                         text: contentColor,
                         primary: contentColor,
+                        cursorColor: contentColor,
                     },
                 }}
                 right={
@@ -139,7 +143,7 @@ export function ThemedTextInput<T = any>({
             />
         </View>
     );
-}
+});
 
 const styles = StyleSheet.create({
     container: {
@@ -157,7 +161,7 @@ const styles = StyleSheet.create({
         borderRadius: 10, // Arredondado próprio
         marginRight: 10, // Espaço entre caixinha e texto
         paddingRight: 4,
-        paddingLeft: 8,    
+        paddingLeft: 8,
     },
     dropdown: {
         flex: 1,

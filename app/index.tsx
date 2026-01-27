@@ -1,5 +1,5 @@
-import { StyleSheet, Alert, AppState, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
-import React, { use, useEffect, useState } from 'react';
+import { StyleSheet, Alert, AppState, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, TextInput } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
 import { router } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { ThemedText } from '@/components/ui/ThemedText';
@@ -23,6 +23,7 @@ export default function Index() {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false)
     const [connection, setConnection] = useState(true);
+    const passwordRef = useRef<TextInput>(null);
 
     useEffect(() => {
         const checkConnection = async () => {
@@ -32,7 +33,6 @@ export default function Index() {
 
         checkConnection();
     }, [])
-    
 
     // Reset variables when screen comes into focus
     useFocusEffect(
@@ -100,41 +100,42 @@ export default function Index() {
         </ThemedView>
     ) : (
         <ThemedView style={styles.safeView}>
-            {/* 1. KeyboardAvoidingView empurra o conteúdo para cima */}
-            <KeyboardAvoidingView 
+            <KeyboardAvoidingView
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
                 style={styles.keyboardAvoidingView}
             >
-                {/* 2. TouchableWithoutFeedback fecha o teclado ao clicar fora */}
-                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                    <ThemedView style={styles.container}>
-                        <ThemedText type="title">Entrar</ThemedText>
-                        <ThemedTextInput
-                            style={styles.textInput}
-                            placeholder="Email"
-                            value={email}
-                            onChangeText={setEmail}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                        />
-                        <ThemedTextInput
-                            style={styles.textInput}
-                            placeholder="Senha"
-                            value={password}
-                            onChangeText={setPassword}
-                            secureTextEntry={!showPassword}
-                            iconName={showPassword ? "eye-off" : "eye"}
-                            onIconPress={() => setShowPassword(!showPassword)}
-                        />
-                        <ThemedButton style={styles.button} onPress={() => signInWithEmail()}>
-                            <ThemedText style={styles.text}>Entrar</ThemedText>
-                        </ThemedButton>
-                        <ThemedButton style={styles.button} onPress={navigateToSignUp}>
-                            <ThemedText style={styles.text}>Cadastrar</ThemedText>
-                        </ThemedButton>
+                <ThemedView style={styles.container}>
+                    <ThemedText type="title">Entrar</ThemedText>
+                    <ThemedTextInput
+                        style={styles.textInput}
+                        placeholder="Email"
+                        value={email}
+                        onChangeText={setEmail}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        returnKeyType="next"
+                        onSubmitEditing={() => passwordRef.current?.focus()}
+                    />
+                    <ThemedTextInput
+                        ref={passwordRef}
+                        style={styles.textInput}
+                        placeholder="Senha"
+                        value={password}
+                        onChangeText={setPassword}
+                        secureTextEntry={!showPassword}
+                        iconName={showPassword ? "eye-off" : "eye"}
+                        onIconPress={() => setShowPassword(!showPassword)}
+                        returnKeyType="go"
+                        onSubmitEditing={signInWithEmail}
+                    />
+                    <ThemedButton style={styles.button} onPress={() => signInWithEmail()}>
+                        <ThemedText style={styles.text}>Entrar</ThemedText>
+                    </ThemedButton>
+                    <ThemedButton style={styles.button} onPress={navigateToSignUp}>
+                        <ThemedText style={styles.text}>Cadastrar</ThemedText>
+                    </ThemedButton>
 
-                    </ThemedView>
-                </TouchableWithoutFeedback>
+                </ThemedView>
             </KeyboardAvoidingView>
         </ThemedView>
     );
