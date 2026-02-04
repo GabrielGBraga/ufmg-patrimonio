@@ -1,20 +1,18 @@
-# Expo Router Example
+# 📦 Patrimônio UFMG
 
-Use [`expo-router`](https://docs.expo.dev/router/introduction/) to build native navigation using files in the `app/` directory.
+Sistema mobile desenvolvido para o grupo de pesquisa MCMEG da UFMG para otimizar o controle de ativos e patrimônios laboratoriais.
 
-## 🚀 How to use
+## 🚀 Funcionalidades
+- **Scanner Integrado:** Leitura de códigos de barras e QR Codes para localização rápida de ativos.
+- **Gestão Completa:** CRUD de patrimônios com upload de imagens via Supabase Storage.
+- **Controle de Acesso:** Sistema de permissões baseado em usuários (Auth).
 
-```sh
-npx create-expo-app -e with-router
-```
+## 🛠 Tecnologias
+- **Mobile:** React Native, Expo, Expo Router.
+- **Backend/Database:** Supabase.
+- **Quality:** TypeScript, Zod, Eslint.
 
-## Deploy
-
-Deploy on all platforms with Expo Application Services (EAS).
-
-- Deploy the website: `npx eas-cli deploy` — [Learn more](https://docs.expo.dev/eas/hosting/get-started/)
-- Deploy on iOS and Android using: `npx eas-cli build` — [Learn more](https://expo.dev/eas)
-
-## 📝 Notes
-
-- [Expo Router: Docs](https://docs.expo.dev/router/introduction/)
+## 📸 Screenshots
+| Lista de Ativos | Scanner | Edição |
+| :---: | :---: | :---: |
+| <img src="link_da_imagem_1" width="200" /> | <img src="link_da_imagem_2" width="200" /> | <img src="link_da_imagem_3" width="200" /> |
