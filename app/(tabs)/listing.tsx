@@ -62,7 +62,8 @@ const PermissionButton = ({ owner_id }: { owner_id: string }) => {
 
   return (
     <ThemedButton
-      onPress={() => { console.log("Editar permissões") }}
+      onPress={() => { /* Edit permissions logic */ }}
+
       style={{ marginTop: 10 }}
     >
       <ThemedText>Editar Permissões</ThemedText>
@@ -70,7 +71,8 @@ const PermissionButton = ({ owner_id }: { owner_id: string }) => {
   );
 };
 
-// Componente do Cartão
+// Card Component
+
 const PatrimonioCard = ({ item, onEdit, isEditable }: { item: any, onEdit: (id: string) => void, isEditable: boolean }) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -99,10 +101,12 @@ const PatrimonioCard = ({ item, onEdit, isEditable }: { item: any, onEdit: (id: 
         </View>
 
         {Object.keys(labelPatrimonio).map((key) => {
-          // Ignora campos técnicos
+          // Ignore technical fields
+
           if (['image', 'lastEditedBy', 'lastEditedAt'].includes(key)) return null;
 
-          // Tratamento Especial para o Responsável (owner_id)
+          // Special Handling for Owner (owner_id)
+
           if (key === 'owner_id') {
             return (
               <View style={styles.detailRow} key={key}>
@@ -110,14 +114,16 @@ const PatrimonioCard = ({ item, onEdit, isEditable }: { item: any, onEdit: (id: 
                   <ThemedText style={styles.label}>{labelPatrimonio[key]}:</ThemedText>
                 </View>
                 <View style={styles.dataContainer}>
-                  {/* Aqui mostramos o nome que veio do Join (dono.full_name) e não o UUID */}
+                  {/* Here we show the name from the Join (dono.full_name) and not the UUID */}
+
                   <ThemedText style={styles.data}>{item.dono?.full_name || "Não definido"}</ThemedText>
                 </View>
               </View>
             );
           }
 
-          // Campos Padrões
+          // Standard Fields
+
           return (
             <View style={styles.detailRow} key={key}>
               <View style={styles.labelContainer}>
@@ -185,8 +191,9 @@ export default function listing() {
         let formatSearch = search;
         if (filter === "patNum" || filter === "atmNum") formatSearch = formatInputForSearch(search);
 
-        // --- BUSCA COM JOIN ---
-        // Trazemos tudo de patrimonios E o full_name da tabela profiles referenciada pelo owner_id
+        // --- SEARCH WITH JOIN ---
+        // Fetch everything from patrimonios AND full_name from profiles table referenced by owner_id
+
         const { data, error } = await supabase
           .from('patrimonios')
           .select('*, dono:profiles(full_name)')

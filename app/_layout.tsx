@@ -4,6 +4,8 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
+import { supabase } from '@/utils/supabase';
+import { router } from 'expo-router';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 
@@ -37,6 +39,18 @@ export default function RootLayout() {
     }
   }, [loaded]);
 
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        router.replace('/');
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
   if (!loaded) {
     return null;
   }
@@ -53,21 +67,23 @@ function RootLayoutNav() {
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="cadastro" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        
-        {/* Nova Rota do Modal adicionada aqui */}
-        <Stack.Screen 
-          name="modalManagePat" 
-          options={{ 
-            presentation: 'modal', // Faz a animação de subir a tela
-            headerShown: false     // Oculta o header padrão pois você usa o ThemedHeader
-          }} 
+
+        {/* new Modal Route added here */}
+
+        <Stack.Screen
+          name="modalManagePat"
+          options={{
+            presentation: 'modal', // Animation to slide up
+            headerShown: false     // Hides default header since we use ThemedHeader
+
+          }}
         />
-        <Stack.Screen 
-          name="settings" 
-          options={{ 
+        <Stack.Screen
+          name="settings"
+          options={{
             presentation: 'modal',
-            headerShown: false 
-          }} 
+            headerShown: false
+          }}
         />
       </Stack>
     </ThemeProvider>

@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import { ThemedView } from "@/components/ui/ThemedView";
 import { ThemedText } from '@/components/ui/ThemedText';
 import { ThemedButton } from '@/components/ui/ThemedButton';
@@ -8,7 +8,7 @@ import { router } from 'expo-router';
 import { useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/utils/supabase';
 
-export default function Cadastro () {
+export default function Cadastro() {
     const params = useLocalSearchParams();
 
     const [email, setEmail] = useState(params.email ? String(params.email) : '');
@@ -17,34 +17,32 @@ export default function Cadastro () {
     const [nome, setNome] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const signUpWithEmail = async () =>{    
-        
-        setLoading(true)    
-        
-        const {      
-            data: { session },      
-            error,    
+    const signUpWithEmail = async () => {
+
+        setLoading(true)
+
+        const {
+            data: { session },
+            error,
         } = await supabase.auth.signUp({
-            email: email,      
+            email: email,
             password: password,
             options: {
                 data: {
                     nome: nome,
                 }
             }
-        })    
-        
-        if (error) Alert.alert(error.message)    
-            
-        console.log('Sessão de cadastro:', session);
-        
-        setLoading(false)  
+        })
+
+        if (error) Alert.alert(error.message)
+
+        setLoading(false)
 
         router.back();
     }
 
     return (
-        <KeyboardAvoidingView 
+        <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={styles.keyboardAvoidingView}
         >

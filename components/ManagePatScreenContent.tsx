@@ -18,7 +18,8 @@ import { supabase } from '@/utils/supabase';
 import { ThemedTextInput } from './ui/ThemedTextInput';
 import { ThemedSwitch } from './ui/ThemedSwitch';
 
-// Helper formatting functions moved from hooks/formating
+// Helper formatting functions
+
 const formatAtmNum = (atmNum: string): string => {
     const atmLimpo = String(atmNum || '').replace(/[^a-zA-Z0-9]/g, '');
     let resultado = atmLimpo.slice(0, 3);
@@ -38,6 +39,7 @@ const formatPatNum = (patNum: string): string => {
 }
 
 // Helper to ensure numeric strings for generic validation
+
 const numericString = z.string().regex(/^\d+([.,]\d+)?$/, "Deve ser um número");
 
 const schema = z.object({
@@ -59,6 +61,7 @@ const schema = z.object({
     const hasPat = !!data.patNum && data.patNum.length > 0;
     const hasAtm = !!data.atmNum && data.atmNum.length > 0;
 
+
     if (!hasPat && !hasAtm) {
         ctx.addIssue({
             code: "custom",
@@ -68,7 +71,7 @@ const schema = z.object({
     }
 
     // 2. Validate Formats STRICTLY if present
-    // patNum should be XXXXXXXXX-X (matches output of formatPatNum if valid)
+
     if (hasPat) {
         if (!/^\d{9}-\d$/.test(data.patNum || '')) {
             ctx.addIssue({
@@ -131,12 +134,14 @@ export default function ManagePatScreenContent() {
     const [scanBool, setScanBool] = useState(false);
     const [boolAtm, setBoolAtm] = useState(false); // Controls visibility of ATM input
 
-    // Controle de permissão visual
+    // Visual permission control
+
     const [isOwner, setIsOwner] = useState(true);
 
     const watchedConservacao = watch('conservacao');
 
-    // Inicialização para Modo ADICIONAR
+    // Initalization for ADD Mode
+
     useEffect(() => {
         if (mode === 'add') {
             const initAdd = async () => {
@@ -159,7 +164,8 @@ export default function ManagePatScreenContent() {
         }
     }, [mode]);
 
-    // Inicialização para Modo EDITAR
+    // Initialization for EDIT Mode
+
     useEffect(() => {
         if (mode === 'edit' && docId) {
             const fetchPatrimonioData = async () => {
@@ -181,11 +187,13 @@ export default function ManagePatScreenContent() {
                         const patrimonioData = data[0] as Patrimonio;
                         const currentUser = await user();
 
-                        // 1. Verifica permissão
+                        // 1. Check permission
+
                         const isUserOwner = patrimonioData.owner_id === currentUser?.id;
                         setIsOwner(isUserOwner);
 
-                        // 2. Busca o EMAIL baseado no UUID do owner_id
+                        // 2. Fetch EMAIL based on owner_id UUID
+
                         let emailDisplay = '';
                         if (patrimonioData.owner_id) {
                             const { data: profile } = await supabase
@@ -197,7 +205,8 @@ export default function ManagePatScreenContent() {
                             if (profile) emailDisplay = profile.email || '';
                         }
 
-                        // Preenche o form
+                        // Fill the form
+
                         reset({
                             patNum: patrimonioData.patNum,
                             atmNum: patrimonioData.atmNum,
@@ -255,16 +264,15 @@ export default function ManagePatScreenContent() {
     const checkExistingPat = async (patNum: string, atmNum: string): Promise<string | null | false> => {
         if (!(await user())) return false;
         try {
-            // Need to handle empty strings for query logic
+            // Handle empty strings for query logic
+
             let query = `patNum.eq.${patNum}`;
+
             if (atmNum) {
                 query += `,atmNum.eq.${atmNum}`;
             }
 
-            // Using OR logic if both exist, but if atmNum is empty we shouldn't query it like that if we want strict check
-            // The original logic was: .or(`patNum.eq.${patNum},atmNum.eq.${atmNum}`);
-            // If atmNum is empty string in DB and we pass empty string, it might match all empty ones?
-            // Actually original code checked: if (patNumExists && patNum !== '')
+
 
             const { data, error } = await supabase
                 .from('patrimonios')
@@ -316,7 +324,8 @@ export default function ManagePatScreenContent() {
         let patFormat = data.patNum ? formatPatNum(data.patNum) : '';
         let atmFormat = data.atmNum ? formatAtmNum(data.atmNum) : '';
 
-        // Se boolAtm for falso, garantimos que atmNum seja vazio
+        // If boolAtm is false, ensure atmNum is empty
+
         if (!boolAtm) {
             atmFormat = '';
         }
@@ -331,12 +340,14 @@ export default function ManagePatScreenContent() {
         try {
             const currentUser = await user();
 
-            // 1. RESOLVER O DONO (Email -> UUID)
+            // 1. RESOLVE OWNER (Email -> UUID)
+
             let finalOwnerId = mode === 'add' ? currentUser?.id : undefined;
 
             if (data.responsavel && isOwner) {
                 const emailTrimmed = data.responsavel.trim();
-                // Só busca se mudou algo ou se é novo
+                // Only fetch if changed or if it's new
+
                 if (emailTrimmed !== currentUser?.email || mode === 'add') {
                     const { data: profile } = await supabase
                         .from('profiles')
@@ -353,22 +364,22 @@ export default function ManagePatScreenContent() {
                 }
             }
 
-            // 2. TRATAMENTO DE IMAGEM
+            // 2. IMAGE HANDLING
+
             let finalImageFileName = imageFileName;
 
-            // Se cancelou imagem antiga no edit
+            // If old image was cancelled in edit mode
+
             if (mode === 'edit' && imageFileName && imageCancel) {
-                // Assuming logic: if we have a new image or removed it, we delete old ref
-                // Actually existing logic was: if cancel, delete.
-                // But wait, if we select NEW image, we should upload it.
-                // If we just removed, image is null -> blocked by check above.
-                // So we definitely have an image uri.
+                // If we select NEW image, we should upload it.
+
                 await deleteImage(imageFileName);
                 finalImageFileName = null; // will be replaced
             }
 
             if (mode === "add" || imageCancel || !imageFileName) {
                 // Upload new image
+
                 const uploadName = await uploadImage(image);
                 if (uploadName) finalImageFileName = uploadName;
                 else throw new Error("Falha upload imagem");
@@ -395,7 +406,8 @@ export default function ManagePatScreenContent() {
                 dataToSave.owner_id = finalOwnerId;
             }
 
-            // 4. ENVIO
+            // 4. SUBMIT
+
             if (mode === "add") {
                 const { error } = await supabase.from('patrimonios').insert(dataToSave);
                 if (error) throw error;

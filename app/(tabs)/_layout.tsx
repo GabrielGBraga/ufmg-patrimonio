@@ -2,23 +2,26 @@ import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Tabs } from 'expo-router';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { Colors } from '@/constants/Colors'; // Supondo que você tenha esse arquivo padrão do Expo
+import { Colors } from '@/constants/Colors';
+
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
-  
-  // Se você não tiver o arquivo de constantes Colors, pode trocar 
-  // Colors[colorScheme ?? 'light'].tint por uma cor fixa como '#2f95dc'
+
+  // If you don't have the Colors constants, you can swap for a fixed color
   const activeColor = Colors?.[colorScheme ?? 'light']?.tint || '#0a7ea4';
+
 
   return (
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: activeColor,
-        headerShown: false, // Oculta o cabeçalho padrão das abas (já que você usa o seu ThemedHeader)
+        headerShown: false, // Hides default header since we use ThemedHeader
+
       }}>
-      
-      {/* 1. Aba de Listagem */}
+
+      {/* 1. Listing Tab */}
+
       <Tabs.Screen
         name="listing"
         options={{
@@ -27,7 +30,8 @@ export default function TabLayout() {
         }}
       />
 
-      {/* 2. Aba de Gerenciar (Adicionar) */}
+      {/* 2. Manage (Add) Tab */}
+
       <Tabs.Screen
         name="managePat"
         options={{
@@ -36,11 +40,13 @@ export default function TabLayout() {
         }}
       />
 
-      {/* 3. Ocultar o Index da barra de abas */}
+      {/* 3. Hide Index from tab bar */}
+
       <Tabs.Screen
         name="index"
         options={{
-          href: null, // Isso faz com que não apareça botão para esta rota na barra de baixo
+          href: null, // This hides the button for this route in the tab bar
+
         }}
       />
     </Tabs>

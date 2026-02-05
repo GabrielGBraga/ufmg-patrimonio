@@ -19,8 +19,9 @@ export default function SettingsScreen() {
   const appVersion = Constants.expoConfig?.version ?? '1.0.0';
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  
-  // Estados para edição
+
+  // Edit states
+
   const [isEditing, setIsEditing] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [newName, setNewName] = useState('');
@@ -43,12 +44,12 @@ export default function SettingsScreen() {
   const handleLogout = async () => {
     Alert.alert("Sair", "Deseja realmente sair da conta?", [
       { text: "Cancelar", style: "cancel" },
-      { 
-        text: "Sair", 
-        style: "destructive", 
+      {
+        text: "Sair",
+        style: "destructive",
         onPress: async () => {
           await supabase.auth.signOut();
-          router.replace('/'); 
+          router.replace('/');
         }
       }
     ]);
@@ -62,18 +63,21 @@ export default function SettingsScreen() {
       const updates: any = {};
       let emailChanged = false;
 
-      // Verifica se houve mudança no nome
+      // Check if name changed
+
       if (newName !== user.user_metadata?.nome) {
         updates.data = { nome: newName };
       }
 
-      // Verifica se houve mudança no email
+      // Check if email changed
+
       if (newEmail !== user.email) {
         updates.email = newEmail;
         emailChanged = true;
       }
 
-      // Se nada mudou, apenas sai do modo edição
+      // If nothing changed, just exit edit mode
+
       if (Object.keys(updates).length === 0) {
         setIsEditing(false);
         setUpdating(false);
@@ -93,7 +97,8 @@ export default function SettingsScreen() {
         Alert.alert("Sucesso", "Perfil atualizado com sucesso!");
       }
 
-      // Atualiza os dados locais
+      // Update local data
+
       setUser(data.user);
       setIsEditing(false);
 
@@ -106,7 +111,8 @@ export default function SettingsScreen() {
   };
 
   const cancelEdit = () => {
-    // Reverte as alterações e sai do modo edição
+    // Revert changes and exit edit mode
+
     if (user) {
       setNewName(user.user_metadata?.nome || '');
       setNewEmail(user.email || '');
@@ -118,42 +124,47 @@ export default function SettingsScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      {/* 1. KeyboardAvoidingView para empurrar conteúdo */}
+      {/* 1. KeyboardAvoidingView to push content */}
+
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20} // Ajuste fino para o header
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20} // Fine tuning for header
+
       >
-        {/* 2. TouchableWithoutFeedback para fechar teclado */}
+        {/* 2. TouchableWithoutFeedback to dismiss keyboard */}
+
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={{ flex: 1 }}>
             <ScrollableAreaView>
               <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
-              
-              <ThemedHeader title="Configurações" onPressIcon={() => router.back()} variant='back'/>
+
+              <ThemedHeader title="Configurações" onPressIcon={() => router.back()} variant='back' />
 
               <ThemedView style={styles.content}>
-                
+
                 <ThemedView style={styles.sectionHeader}>
                   <ThemedText style={styles.sectionTitle}>Minha Conta</ThemedText>
-                  {/* Botão de Editar (lápis) */}
+                  {/* Edit Button (pencil) */}
+
                   {!loading && !isEditing && (
                     <ThemedButton onPress={() => setIsEditing(true)} style={styles.iconButton}>
                       <Ionicons name="pencil" size={20} color={editColor} />
-                      <ThemedText style={{color: editColor, marginLeft: 5}}>Editar</ThemedText>
+                      <ThemedText style={{ color: editColor, marginLeft: 5 }}>Editar</ThemedText>
                     </ThemedButton>
                   )}
                 </ThemedView>
-                
+
                 {loading ? (
                   <ActivityIndicator style={{ alignSelf: 'flex-start', marginVertical: 10 }} />
                 ) : (
                   <ThemedView style={styles.infoContainer}>
-                    
-                    {/* Campo NOME */}
+
+                    {/* NAME Field */}
+
                     <ThemedText style={styles.label}>Nome:</ThemedText>
                     {isEditing ? (
-                      <ThemedTextInput 
+                      <ThemedTextInput
                         value={newName}
                         onChangeText={setNewName}
                         placeholder="Seu nome"
@@ -162,11 +173,12 @@ export default function SettingsScreen() {
                     ) : (
                       <ThemedText style={styles.value}>{user?.user_metadata?.nome || 'Não disponível'}</ThemedText>
                     )}
-                    
-                    {/* Campo EMAIL */}
+
+                    {/* EMAIL Field */}
+
                     <ThemedText style={styles.label}>E-mail:</ThemedText>
                     {isEditing ? (
-                      <ThemedTextInput 
+                      <ThemedTextInput
                         value={newEmail}
                         onChangeText={setNewEmail}
                         keyboardType="email-address"
@@ -177,30 +189,32 @@ export default function SettingsScreen() {
                     ) : (
                       <ThemedText style={styles.value}>{user?.email || 'Não disponível'}</ThemedText>
                     )}
-                    
-                    {/* ID (Sempre somente leitura) */}
+
+                    {/* ID (Always read-only) */}
+
                     <ThemedText style={styles.label}>ID do Usuário:</ThemedText>
                     <ThemedText style={[styles.value, { fontSize: 12, opacity: 0.6 }]}>
                       {user?.id}
                     </ThemedText>
 
-                    {/* Botões de Ação na Edição */}
+                    {/* Edit Action Buttons */}
+
                     {isEditing && (
                       <ThemedView style={styles.actionButtons}>
-                        <ThemedButton 
-                          onPress={cancelEdit} 
+                        <ThemedButton
+                          onPress={cancelEdit}
                           style={[styles.smallButton, styles.cancelButton]}
                           disabled={updating}
                         >
-                          <ThemedText style={{color: 'white'}}>Cancelar</ThemedText>
+                          <ThemedText style={{ color: 'white' }}>Cancelar</ThemedText>
                         </ThemedButton>
 
-                        <ThemedButton 
-                          onPress={handleUpdateProfile} 
+                        <ThemedButton
+                          onPress={handleUpdateProfile}
                           style={[styles.smallButton]}
                           disabled={updating}
                         >
-                          {updating ? <ActivityIndicator color="#fff" /> : <ThemedText style={{color: 'white'}}>Salvar</ThemedText>}
+                          {updating ? <ActivityIndicator color="#fff" /> : <ThemedText style={{ color: 'white' }}>Salvar</ThemedText>}
                         </ThemedButton>
                       </ThemedView>
                     )}
@@ -216,9 +230,9 @@ export default function SettingsScreen() {
                 </ThemedText>
 
                 {!isEditing && (
-                    <ThemedButton onPress={handleLogout} style={styles.logoutButton}>
+                  <ThemedButton onPress={handleLogout} style={styles.logoutButton}>
                     <ThemedText style={styles.logoutText}>Sair da Conta</ThemedText>
-                    </ThemedButton>
+                  </ThemedButton>
                 )}
 
               </ThemedView>
@@ -269,7 +283,7 @@ const styles = StyleSheet.create({
   value: {
     fontSize: 16,
     marginBottom: 5,
-    paddingVertical: 4, 
+    paddingVertical: 4,
   },
   infoText: {
     marginBottom: 20,
@@ -289,7 +303,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
   },
-  // Botões de Salvar/Cancelar
+  // Save/Cancel Buttons
+
   actionButtons: {
     flexDirection: 'row',
     gap: 10,

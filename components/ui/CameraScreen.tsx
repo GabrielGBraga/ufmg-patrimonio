@@ -26,7 +26,7 @@ export default function CameraScreen({ onBarcodeScanned }) {
       onBarcodeScanned({ type, data });
     }
   };
-  
+
   const isPortrait = screenDimensions.height > screenDimensions.width;
   const overlayWidth = isPortrait ? screenDimensions.width * 0.7 : screenDimensions.width * 0.4;
   const overlayHeight = isPortrait ? screenDimensions.height * 0.2 : screenDimensions.height * 0.6;
@@ -69,13 +69,13 @@ export default function CameraScreen({ onBarcodeScanned }) {
       />
 
       <View style={styles.overlay}>
-        <View style={{flexDirection: 'row', justifyContent: 'center'}}>
+        <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
           <View style={focusedStyle} />
         </View>
       </View>
 
       <Text style={styles.overlayText}>Posicione o código de barras no centro da área</Text>
-      
+
       {isScanned && (
         <TouchableOpacity style={styles.scanAgainButton} onPress={() => setIsScanned(false)}>
           <Text style={styles.scanAgainText}>Escanear Novamente</Text>
@@ -117,10 +117,12 @@ const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
-    // Removido justifyContent e alignItems para permitir a estrutura de flexbox
+    // Removed justifyContent and alignItems to allow flexbox structure
+
   },
   middleContainer: {
-    // A altura é definida pelo 'focusedStyle' e a largura é flexível
+    // Height defined by 'focusedStyle', width is flexible
+
     flexDirection: 'row',
   },
   overlayText: {
@@ -130,7 +132,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     paddingHorizontal: 20,
-    alignSelf: 'center', // Garante que o texto fique centralizado
+    alignSelf: 'center', // Ensures text is centered
+
   },
   scanAgainButton: {
     position: 'absolute',

@@ -1,6 +1,5 @@
 import * as ImagePicker from 'expo-image-picker';
-import {Alert} from "react-native";
-import {getDownloadURL, ref, StorageReference, uploadBytes, deleteObject} from "firebase/storage";
+import { Alert } from "react-native";
 import { supabase } from '@/utils/supabase';
 import * as ImageManipulator from 'expo-image-manipulator';
 
@@ -10,42 +9,40 @@ type imageData = {
     height: number;
 };
 /**
- * Lança o seletor de imagens de forma assíncrona e processa a imagem selecionada.
+ * Launches the image picker asynchronously and processes the selected image.
  *
- * Esta função abre a galeria de imagens do dispositivo para que o usuário selecione uma imagem.
- * Após a seleção, ela processa a imagem calculando uma nova largura e altura
- * para manter a proporção (_aspect ratio_), enquanto a restringe a dimensões máximas especificadas.
- * O URI da imagem processada e suas dimensões ajustadas são então armazenados em variáveis de estado.
+ * This function opens the device's image gallery or camera for the user to select an image.
+ * After selection, it processes the image by calculating a new width and height
+ * to maintain the aspect ratio, while restricting it to specified maximum dimensions.
+ * The processed image URI and its adjusted dimensions are then returned.
  *
- * A função não permite edição da mídia durante a seleção e só aceita
- * imagens como tipo de mídia. A imagem resultante é configurada para a maior qualidade.
+ * The function does not allow media editing during selection and only accepts
+ * images as media type. The resulting image is configured for high quality.
  *
- * Variáveis atualizadas após a seleção:
- * - Atualiza o URI da imagem usando `setImage`.
- * - Atualiza os dados do formulário para incluir a nova largura e altura da imagem
- *   dentro da propriedade `image`.
+ * Updates variables after selection:
+ * - Updates the image URI using `setImage`.
+ * - Updates form data to include the new image width and height
+ *   within the `image` property.
  *
- * Nota: Se o usuário cancelar a seleção ou nenhum ativo for retornado, nenhuma atualização ocorrerá.
+ * Note: If the user cancels selection or no asset is returned, no update occurs.
  */
-export const getImage = async (selectionType: 'Camera'|'Gallery'): Promise<imageData | undefined> => {
-    try {        
-        console.log(selectionType)
+export const getImage = async (selectionType: 'Camera' | 'Gallery'): Promise<imageData | undefined> => {
+    try {
         const imageFunction = {
             'Camera': ImagePicker.launchCameraAsync,
             'Gallery': ImagePicker.launchImageLibraryAsync
         };
-    
+
         const result = await imageFunction[selectionType]({
             mediaTypes: 'images',
         });
-    
-        console.log("Image selected: ", !!result);
+
         if (!result.canceled && result.assets && result.assets.length > 0) {
             const { uri, width, height } = result.assets[0];
-            const maxWidth = 300; // Largura máxima
-            const maxHeight = 300; // Altura máxima
-    
-            // Calcula nova largura e altura proporcionalmente
+            const maxWidth = 300; // Max width
+            const maxHeight = 300; // Max height
+
+            // Calculate new width and height proportionally
             let newWidth = width;
             let newHeight = height;
             if (width > maxWidth || height > maxHeight) {
@@ -72,24 +69,24 @@ export const getImage = async (selectionType: 'Camera'|'Gallery'): Promise<image
 
             return { uri: manipulatorResult.uri, width: newWidth, height: newHeight };
         }
-    
-        return undefined; // Retorna undefined caso não haja imagem ou se o usuário cancelar
+
+        return undefined; // Returns undefined if no image or user cancelled
+
     } catch (error) {
-        console.error("Erro ao tentar capturar a imagem: ", error)
+        console.error("Error trying to capture image: ", error)
     }
 };
 
 /**
- * 
- * @param image 
- * @returns fileName || undefined
+ * Uploads an image to Supabase storage.
+ * @param image URI of the image to upload
+ * @returns fileName if successful, undefined otherwise
  */
 export const uploadImage = async (image: string): Promise<string | undefined> => {
     try {
-        console.log("Tentando fazer upload da imagem.")
         const response = await fetch(image);
         const blob = await response.blob();
-        
+
         const arrayBuffer = await new Response(blob).arrayBuffer();
         const fileName = `patPhotos/${Date.now()}.jpg`;
         const { error } = await supabase.storage
@@ -98,7 +95,7 @@ export const uploadImage = async (image: string): Promise<string | undefined> =>
         if (error) {
             console.error('Error uploading image: ', error);
         } else {
-            console.log('Image uploaded successfully: ', fileName);
+            // Success
         }
         return fileName;
     } catch (error: any) {
@@ -108,20 +105,20 @@ export const uploadImage = async (image: string): Promise<string | undefined> =>
     }
 };
 
-
 export const deleteImage = async (fileName: string): Promise<void> => {
     try {
         const { data, error } = await supabase
             .storage
             .from('images')
             .remove([fileName])
-        
+
         if (error) {
-            console.error("Erro ao deletar a imagem: ", error);
-            Alert.alert("Erro", "Erro ao deletar a imagem");
+            console.error("Error deleting image: ", error);
+            Alert.alert("Error", "Error deleting image");
         }
     } catch (error: any) {
-        console.error("Erro ao deletar a imagem: ", error);
-        Alert.alert("Erro ao deletar a imagem!", error.message);
+        console.error("Error deleting image: ", error);
+        Alert.alert("Error deleting image!", error.message);
     }
 };
+
