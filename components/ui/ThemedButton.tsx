@@ -1,22 +1,31 @@
-import { TouchableOpacity, type TouchableOpacityProps, StyleSheet } from 'react-native';
+import { Pressable, type PressableProps, StyleSheet, type ViewStyle } from 'react-native';
 import { useThemeColor } from '@/hooks/useThemeColor';
 
 // Essas são as propriedades do objeto que podem ser editadas.
-export type ThemedViewTouchableOpacity = TouchableOpacityProps & {
+export type ThemedButtonProps = PressableProps & {
     lightColor?: string;
     darkColor?: string;
     textColor?: string;
+    activeOpacity?: number;
 };
 
-export function ThemedButton({ style, lightColor, darkColor, textColor, ...otherProps }: ThemedViewTouchableOpacity) {
+export function ThemedButton({ style, lightColor, darkColor, textColor, activeOpacity = 0.7, ...otherProps }: ThemedButtonProps) {
     // Define a cor dependendo do tema do sistema
     // useThemeColor define a cor baseado no arquivo @/constants/Colors.ts
     const backgroundColor = useThemeColor({ light: lightColor, dark: darkColor }, 'buttonBackground');
-    const color = useThemeColor({ light: textColor, dark: textColor }, 'buttonText');
 
     return (
-        <TouchableOpacity style={[{ backgroundColor }, style, styles.button]} {...otherProps}>
-        </TouchableOpacity>
+        <Pressable
+            style={({ pressed }) => [
+                { backgroundColor },
+                styles.button,
+                typeof style === 'function' ? style({ pressed }) : style,
+                pressed && { opacity: activeOpacity }
+            ]}
+            {...otherProps}
+        >
+            {otherProps.children}
+        </Pressable>
     );
 }
 

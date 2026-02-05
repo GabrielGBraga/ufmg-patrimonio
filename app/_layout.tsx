@@ -78,6 +78,15 @@ function RootLayoutNav() {
 
           }}
         />
+
+        <Stack.Screen
+          name="permissions"
+          options={{
+            presentation: 'modal',
+            headerShown: false
+          }}
+        />
+
         <Stack.Screen
           name="settings"
           options={{

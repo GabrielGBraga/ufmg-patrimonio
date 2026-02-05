@@ -45,7 +45,7 @@ const formatInputForSearch = (input: string): string => {
   return formattedResult;
 };
 
-const PermissionButton = ({ owner_id }: { owner_id: string }) => {
+const PermissionButton = ({ owner_id, patrimonio_id }: { owner_id: string, patrimonio_id: number }) => {
   const [isOwner, setIsOwner] = useState(false);
 
   useEffect(() => {
@@ -62,7 +62,15 @@ const PermissionButton = ({ owner_id }: { owner_id: string }) => {
 
   return (
     <ThemedButton
-      onPress={() => { /* Edit permissions logic */ }}
+      onPress={() => {
+        router.push({
+          pathname: "/permissions",
+          params: {
+            id: patrimonio_id,
+            owner_id: owner_id
+          }
+        })
+      }}
 
       style={{ marginTop: 10 }}
     >
@@ -153,7 +161,7 @@ const PatrimonioCard = ({ item, onEdit, isEditable }: { item: any, onEdit: (id: 
           </View>
         )}
 
-        <PermissionButton owner_id={item.owner_id}></PermissionButton>
+        <PermissionButton owner_id={item.owner_id} patrimonio_id={item.id}></PermissionButton>
 
       </ScrollView>
     </ThemedView>
@@ -237,6 +245,8 @@ export default function listing() {
             onFilterChange={(item: any) => setFilter(item.value)}
             iconName="magnify"
             onIconPress={fetchPatrimonio}
+            returnKeyType="go"
+            onSubmitEditing={fetchPatrimonio}
           />
         </ThemedView>
         <ThemedButton onPress={() => setScanBool(true)}><ThemedText>Escanear</ThemedText></ThemedButton>
@@ -265,7 +275,7 @@ export default function listing() {
         snapToInterval={SNAP_INTERVAL}
         snapToAlignment="center"
         decelerationRate="fast"
-        ListEmptyComponent={<ThemedText style={{ textAlign: 'center', marginTop: 20 }}>Sem resultados</ThemedText>}
+        ListEmptyComponent={<ThemedText style={{ justifyContent: 'center', alignItems: 'center', marginTop: 20 }}>Sem resultados</ThemedText>}
       />
     </ThemedView>
   );
