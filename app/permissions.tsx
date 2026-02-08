@@ -8,7 +8,7 @@ import { supabase } from '@/utils/supabase';
 import { ThemedCheckbox } from '@/components/ui/ThemedCheckbox';
 import { ThemedButton } from '@/components/ui/ThemedButton';
 
-// Definindo a interface para tipagem correta
+// Data structure for user permissions
 interface UserPermission {
     user_id: string;
     name: string;
@@ -19,7 +19,7 @@ interface UserPermission {
 export default function PermissionsScreen() {
     const { id, owner_id } = useLocalSearchParams();
 
-    // Convertendo para o tipo correto para garantir segurança no envio
+    // Parse parameters to correct types
     const patId = Number(id);
     const ownId = String(owner_id);
 
@@ -28,30 +28,31 @@ export default function PermissionsScreen() {
     const [edited, setEdited] = useState(false);
     const [saving, setSaving] = useState(false);
 
-    // Função que carrega e mescla os dados (A Lógica do "Merge")
+    /**
+     * Fetches all profiles and merges them with existing permissions for the current asset.
+     */
     const fetchAndMergeData = async () => {
         setLoading(true);
         try {
-            // 1. Buscamos TODOS os perfis disponíveis
+            // 1. Fetch available profiles
             const { data: profiles, error: profilesError } = await supabase
                 .from('profiles')
                 .select('id, full_name, email');
 
             if (profilesError) throw profilesError;
 
-            // 2. Buscamos AS PERMISSÕES JÁ EXISTENTES para este patrimônio
+            // 2. Fetch existing permissions for this asset
             const { data: permissions, error: permissionsError } = await supabase
-                .from('permissoes') // Certifique-se que o nome da tabela está correto aqui
+                .from('permissoes')
                 .select('user_id')
                 .eq('patrimonio_id', patId);
 
             if (permissionsError) throw permissionsError;
 
-            // 3. Criamos um Set com os IDs que já possuem permissão
-            // Usamos Set porque verificar "set.has(id)" é muito mais rápido que "array.includes(id)"
+            // 3. Create a Set of existing IDs for efficient lookup
             const existingEditorsIds = new Set(permissions?.map(p => p.user_id));
 
-            // 4. Cruzamos os dados: Se o ID do profile está no Set, is_editor vira true
+            // 4. Map profiles to permissions; mark as editor if ID exists in set
             const mergedList = profiles?.map((profile: any) => ({
                 user_id: profile.id,
                 name: profile.full_name || 'Usuário sem nome',
@@ -71,15 +72,15 @@ export default function PermissionsScreen() {
 
     useFocusEffect(useCallback(() => {
         fetchAndMergeData();
-        setEdited(false); // Reseta o estado de edição ao entrar na tela
+        setEdited(false); // Reset edit state on focus
     }, []));
 
-    // Lógica correta para alterar estado no React (Imutabilidade)
+    /**
+     * Toggles the editor permission state for a user.
+     */
     const handleToggleUser = (index: number, currentValue: boolean) => {
-        const newUsersList = [...users]; // Cria cópia rasa do array
+        const newUsersList = [...users];
 
-        // Atualiza o objeto específico recriando-o (spread operator)
-        // Isso garante que o React perceba a mudança
         newUsersList[index] = {
             ...newUsersList[index],
             is_editor: !currentValue
@@ -92,12 +93,12 @@ export default function PermissionsScreen() {
     const savePermissions = async () => {
         setSaving(true);
         try {
-            // Filtramos apenas os IDs dos usuários que estão marcados como TRUE
+            // Filter IDs of users with editor permission
             const selectedIds = users
                 .filter(u => u.is_editor)
                 .map(u => u.user_id);
 
-            // Chamamos a função RPC (Stored Procedure) do Banco
+            // Execute RPC to update permissions
             const { error } = await supabase
                 .rpc('manage_patrimony_permissions', {
                     p_patrimonio_id: patId,
@@ -112,8 +113,7 @@ export default function PermissionsScreen() {
 
             router.back();
 
-            // Opcional: Recarregar os dados para garantir sincronia total
-            // fetchAndMergeData(); 
+
 
         } catch (error) {
             console.error('Erro ao salvar:', error);
@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     scrollContent: {
-        paddingBottom: 100, // Espaço para o botão não cobrir o último item
+        paddingBottom: 100, // Prevent content from being hidden behind bottom button
     },
     instructionText: {
         margin: 15,
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#0a7ea4', // Ajuste para a cor do seu tema
+        backgroundColor: '#0a7ea4',
     },
     disabledButton: {
         opacity: 0.5,
