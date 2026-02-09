@@ -20,12 +20,15 @@
     "expo-checkbox": "~5.0.8",
     "expo-constants": "~18.0.8",
     "expo-dev-client": "~6.0.20",
+    "expo-file-system": "~19.0.21",
     "expo-image": "~3.0.11",
     "expo-image-manipulator": "~14.0.8",
     "expo-image-picker": "~17.0.10",
     "expo-linking": "~8.0.11",
+    "expo-print": "~15.0.8",
     "expo-router": "~6.0.21",
     "expo-screen-orientation": "~9.0.8",
+    "expo-sharing": "~14.0.8",
     "expo-splash-screen": "~31.0.13",
     "expo-status-bar": "~3.0.9",
     "expo-updates": "~29.0.16",
@@ -41,6 +44,7 @@
     "react-native-screens": "~4.16.0",
     "react-native-url-polyfill": "^3.0.0",
     "react-native-web": "^0.21.0",
+    "xlsx": "^0.18.5",
     "zod": "^4.3.6"
   },
   "devDependencies": {

@@ -14,6 +14,8 @@ import { useIsFocused } from "@react-navigation/native";
 import CameraScreen from "@/components/ui/CameraScreen";
 import { supabase } from "@/utils/supabase";
 import { useAccessControl } from "@/hooks/useAccessControl";
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { exportToExcel } from "@/hooks/ExportService";
 
 // Helper functions inlined
 const formatAtmNum = (atmNum: string): string => {
@@ -246,24 +248,45 @@ export default function listing() {
   ) : (
     <ThemedView style={styles.safeArea}>
       <ThemedHeader title="Pesquisar" onPressIcon={() => router.push('/settings')} />
-      <View>
-        <ThemedView style={styles.row}>
-          <ThemedTextInput
-            placeholder="Pesquisar..."
-            value={search}
-            onChangeText={setSearch}
-            style={styles.input}
-            filterData={searchTypes}
-            filterValue={filter}
-            onFilterChange={(item: any) => setFilter(item.value)}
-            iconName="magnify"
-            onIconPress={fetchPatrimonio}
-            returnKeyType="go"
-            onSubmitEditing={fetchPatrimonio}
-          />
-        </ThemedView>
-        <ThemedButton onPress={() => setScanBool(true)}><ThemedText>Escanear</ThemedText></ThemedButton>
-      </View>
+      <ThemedView style={styles.row}>
+        <ThemedTextInput
+          placeholder="Pesquisar..."
+          value={search}
+          onChangeText={setSearch}
+          style={styles.input}
+          filterData={searchTypes}
+          filterValue={filter}
+          onFilterChange={(item: any) => setFilter(item.value)}
+          iconName="magnify"
+          onIconPress={fetchPatrimonio}
+          returnKeyType="go"
+          onSubmitEditing={fetchPatrimonio}
+        />
+      </ThemedView>
+      <ThemedView style={styles.buttonRow}>
+        <ThemedButton
+          onPress={() => setScanBool(true)}
+          style={styles.actionButton}
+        >
+          <MaterialCommunityIcons name="barcode-scan" size={24} color="white" />
+          <ThemedText style={styles.buttonText}>Escanear</ThemedText>
+        </ThemedButton>
+        {patrimonioList.length > 0 && (
+          <ThemedButton
+            onPress={async () => {
+              try {
+                await exportToExcel(patrimonioList, 'patrimonio_export');
+              } catch (error) {
+                Alert.alert('Erro', 'Falha ao exportar dados');
+              }
+            }}
+            style={styles.actionButton}
+          >
+            <MaterialCommunityIcons name="export" size={24} color="white" />
+            <ThemedText style={styles.buttonText}>Exportar</ThemedText>
+          </ThemedButton>
+        )}
+      </ThemedView>
 
       <FlatList
         data={patrimonioList}
@@ -305,6 +328,26 @@ const styles = StyleSheet.create({
     margin: 10,
     alignItems: "center",
     justifyContent: "center",
+  },
+  buttonRow: {
+    flexDirection: "row",
+    marginHorizontal: 10,
+    marginBottom: 10,
+    gap: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 12,
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: "600",
   },
   input: {
     flex: 1,
