@@ -1,13 +1,20 @@
-import { supabase } from '@/utils/supabase'; // Importe onde você inicializou seu client
+import { supabase } from '@/utils/supabase';
 
-export const checkServerStatus = async () => {
+
+/**
+ * Checks the connectivity status of the Supabase server.
+ * 
+ * This function attempts to make a lightweight query to the 'patrimonios' table.
+ * It is used to verify if the client can successfully communicate with the database,
+ * which is useful for handling offline states or server unavailability.
+ * 
+ * @returns {Promise<boolean>} Returns `true` if the connection is successful, `false` otherwise.
+ */
+export const checkServerStatus = async (): Promise<boolean> => {
     try {
-        // Tenta buscar apenas a contagem de linhas de uma tabela que você sabe que existe.
-        // 'head: true' significa: "Não me traga dados, só me diga se deu certo".
-        // count: 'exact' é opcional, mas força o banco a responder algo.
-        
+
         const { data, error } = await supabase
-            .from('patrimonios') // Troque 'users' por qualquer tabela real do seu banco
+            .from('patrimonios')
             .select()
 
         if (error) {

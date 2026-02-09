@@ -1,0 +1,61 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background: Vibrant Blue -->
+  <rect width="1024" height="1024" rx="200" fill="#007BFF"/>
+
+  <!-- Centered Isometric Composition -->
+  <g transform="translate(512, 512)">
+    
+    <!-- BOX GROUP -->
+    <!-- Positioning box so its center feels balanced in the icon -->
+    <g transform="translate(-250, -200)">
+        
+        <!-- Top Face (Lightest) -->
+        <path d="M250 0 L500 125 L250 250 L0 125 Z" fill="#F0F4F8"/>
+        
+        <!-- Right Face (Darkest - Shadow side) -->
+        <path d="M500 125 L500 475 L250 600 L250 250 Z" fill="#D1D9E6"/>
+        
+        <!-- Left Face (Medium - Main face for barcode) -->
+        <path d="M0 125 L250 250 L250 600 L0 475 Z" fill="#FFFFFF"/>
+        
+        <!-- Barcode on Left Face -->
+        <!-- Skewed to match perspective of left face -->
+        <!-- Using a transform to align with the isometric plane -->
+        <g transform="matrix(1, 0.5, 0, 1, 40, 180)">
+            <rect x="0" y="0" width="15" height="180" fill="#333"/>
+            <rect x="25" y="0" width="8" height="180" fill="#333"/>
+            <rect x="42" y="0" width="20" height="180" fill="#333"/>
+            <rect x="70" y="0" width="12" height="180" fill="#333"/>
+            <rect x="90" y="0" width="25" height="180" fill="#333"/>
+            <rect x="125" y="0" width="10" height="180" fill="#333"/>
+             <rect x="145" y="0" width="18" height="180" fill="#333"/>
+        </g>
+    </g>
+
+    <!-- SCAN BEAM -->
+    <!-- Red laser line cutting across the box horizontally -->
+    <!-- Adding a glow effect -->
+    <g transform="translate(-400, 50)">
+        <defs>
+            <filter id="laserGlow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+                <feMerge>
+                    <feMergeNode in="coloredBlur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+            </filter>
+            <linearGradient id="laserGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="rgba(255, 0, 0, 0)"/>
+                <stop offset="10%" stop-color="#FF0000"/>
+                <stop offset="50%" stop-color="#FF3333"/>
+                <stop offset="90%" stop-color="#FF0000"/>
+                <stop offset="100%" stop-color="rgba(255, 0, 0, 0)"/>
+            </linearGradient>
+        </defs>
+        
+        <!-- The Beam Line -->
+        <rect x="0" y="0" width="800" height="15" fill="url(#laserGradient)" filter="url(#laserGlow)" opacity="0.9"/>
+    </g>
+
+  </g>
+</svg>

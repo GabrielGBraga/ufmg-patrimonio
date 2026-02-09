@@ -54,14 +54,18 @@ export default function Index() {
                 email: email,
                 password: password,
             })
-            if (error) return Alert.alert('Email ou senha incorretos.', error.message)
-            else Alert.alert('Logado com sucesso!')
+            if (error) {
+                Alert.alert('Email ou senha incorretos.', error.message)
+                setLoading(false)
+                return
+            }
+            Alert.alert('Logado com sucesso!')
+            // Navigation is handled by onAuthStateChange in _layout.tsx
         } catch (error) {
             Alert.alert('Erro durante o login.')
             console.error("Logging error: ", error);
+            setLoading(false)
         }
-        setLoading(false)
-        router.push('/(tabs)')
     }
 
     const navigateToSignUp = () => {
@@ -124,6 +128,7 @@ export default function Index() {
                         onChangeText={setPassword}
                         secureTextEntry={!showPassword}
                         iconName={showPassword ? "eye-off" : "eye"}
+                        autoCapitalize="none"
                         onIconPress={() => setShowPassword(!showPassword)}
                         returnKeyType="go"
                         onSubmitEditing={signInWithEmail}
