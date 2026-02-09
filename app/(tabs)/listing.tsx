@@ -1,4 +1,4 @@
-import { StyleSheet, FlatList, View, Alert, TouchableOpacity, ActivityIndicator, ScrollView, useWindowDimensions } from "react-native";
+import { StyleSheet, FlatList, View, Alert, TouchableOpacity, ActivityIndicator, ScrollView, useWindowDimensions, BackHandler } from "react-native";
 import { Image } from 'expo-image';
 import React, { useEffect, useState } from "react";
 import { ThemedText } from "@/components/ui/ThemedText";
@@ -59,6 +59,19 @@ const PermissionButton = ({ owner_id, patrimonio_id }: { owner_id: string, patri
   }, [owner_id]);
 
   if (!isOwner) return null;
+
+  const backAction = () => {
+    Alert.alert('Wait!', 'Are you sure you want to go back?', [
+      { text: 'Cancel', onPress: () => null, style: 'cancel' },
+      { text: 'YES', onPress: () => BackHandler.exitApp() },
+    ]);
+    return true; // Returning true prevents the default back behavior
+  };
+
+  const backHandler = BackHandler.addEventListener(
+    'hardwareBackPress',
+    backAction
+  );
 
   return (
     <ThemedButton
@@ -285,7 +298,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     paddingTop: 5,
-    backgroundColor: '#000',
+    // backgroundColor: '#000',
   },
   row: {
     flexDirection: "row",

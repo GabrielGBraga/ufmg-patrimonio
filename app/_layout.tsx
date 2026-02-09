@@ -79,10 +79,21 @@ export default function RootLayout() {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setInitialSession(session);
+        const { data: { session }, error } = await supabase.auth.getSession();
+
+        // If there's an error (e.g., invalid refresh token), clear the session
+        if (error) {
+          console.log('Session error, clearing invalid session:', error.message);
+          await supabase.auth.signOut();
+          setInitialSession(null);
+        } else {
+          setInitialSession(session);
+        }
       } catch (error) {
         console.error('Error checking session:', error);
+        // Clear any corrupted session data
+        await supabase.auth.signOut();
+        setInitialSession(null);
       } finally {
         setIsCheckingSession(false);
       }
