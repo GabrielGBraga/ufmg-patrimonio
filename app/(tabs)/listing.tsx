@@ -311,7 +311,11 @@ export default function listing() {
         snapToInterval={SNAP_INTERVAL}
         snapToAlignment="center"
         decelerationRate="fast"
-        ListEmptyComponent={<ThemedText style={{ justifyContent: 'center', alignItems: 'center', marginTop: 20 }}>Sem resultados</ThemedText>}
+        ListEmptyComponent={
+          <ThemedView style={{ alignItems: 'center', marginTop: 20, width: width - (SIDE_SPACING * 2) }}>
+            <ThemedText>Sem resultados</ThemedText>
+          </ThemedView>
+        }
       />
     </ThemedView>
   );
