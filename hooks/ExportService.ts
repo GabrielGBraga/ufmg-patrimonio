@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { Paths, File } from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as Print from 'expo-print';
 
@@ -16,15 +16,6 @@ type ExportDataItem = Record<string, string | number | boolean | null | undefine
  * @param fileName - Name of the generated file (without extension). Defaults to "pesquisa"
  * @returns Promise that resolves when the file is successfully shared
  * @throws Error if file writing or sharing fails
- * 
- * @example
- * ```typescript
- * const data = [
- *   { name: 'Item 1', value: 100 },
- *   { name: 'Item 2', value: 200 }
- * ];
- * await exportToExcel(data, 'my-report');
- * ```
  */
 export const exportToExcel = async (
   data: ExportDataItem[],
@@ -36,14 +27,15 @@ export const exportToExcel = async (
     XLSX.utils.book_append_sheet(workbook, worksheet, "Resultados");
 
     const excelBase64 = XLSX.write(workbook, { type: 'base64', bookType: 'xlsx' });
-    const file = new File(Paths.cache, `${fileName}.xlsx`);
+    const fileUri = (FileSystem as any).cacheDirectory + `${fileName}.xlsx`;
 
     // Create the file and write base64 content
-    file.create();
-    file.write(excelBase64, { encoding: 'base64' });
+    await FileSystem.writeAsStringAsync(fileUri, excelBase64, {
+      encoding: "base64",
+    });
 
     if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(file.uri);
+      await Sharing.shareAsync(fileUri);
     } else {
       throw new Error('Sharing is not available on this device');
     }

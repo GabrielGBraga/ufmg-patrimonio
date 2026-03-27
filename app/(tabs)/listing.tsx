@@ -271,21 +271,42 @@ export default function listing() {
           <MaterialCommunityIcons name="barcode-scan" size={24} color="white" />
           <ThemedText style={styles.buttonText}>Escanear</ThemedText>
         </ThemedButton>
-        {patrimonioList.length > 0 && (
-          <ThemedButton
-            onPress={async () => {
-              try {
-                await exportToExcel(patrimonioList, 'patrimonio_export');
-              } catch (error) {
-                Alert.alert('Erro', 'Falha ao exportar dados');
-              }
-            }}
-            style={styles.actionButton}
-          >
-            <MaterialCommunityIcons name="export" size={24} color="white" />
-            <ThemedText style={styles.buttonText}>Exportar</ThemedText>
-          </ThemedButton>
-        )}
+        <ThemedButton
+          onPress={async () => {
+            if (patrimonioList.length === 0) {
+              return Alert.alert("Aviso", "Não há dados para exportar. Realize uma pesquisa primeiro.");
+            }
+            try {
+              // Filter and format data for export
+              const formattedData = patrimonioList.map(item => {
+                const row: any = {};
+                Object.keys(labelPatrimonio).forEach((key) => {
+                  // Skip internal/technical fields
+                  if (['image', 'lastEditedBy', 'lastEditedAt'].includes(key)) return;
+                  
+                  const label = (labelPatrimonio as any)[key];
+                  if (typeof label !== 'string' || label === '') return;
+
+                  if (key === 'owner_id') {
+                    row[label] = item.dono?.full_name || "Não definido";
+                  } else {
+                    row[label] = item[key];
+                  }
+                });
+                return row;
+              });
+
+              await exportToExcel(formattedData, 'patrimonio_export');
+            } catch (error) {
+              console.error(error);
+              Alert.alert('Erro', 'Falha ao exportar dados');
+            }
+          }}
+          style={styles.actionButton}
+        >
+          <MaterialCommunityIcons name="export" size={24} color="white" />
+          <ThemedText style={styles.buttonText}>Exportar</ThemedText>
+        </ThemedButton>
       </ThemedView>
 
       <FlatList
