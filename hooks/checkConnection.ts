@@ -15,7 +15,8 @@ export const checkServerStatus = async (): Promise<boolean> => {
 
         const { data, error } = await supabase
             .from('patrimonios')
-            .select()
+            .select('id')
+            .limit(1)
 
         if (error) {
             return false;
